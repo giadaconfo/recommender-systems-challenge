@@ -1,12 +1,17 @@
 import pandas as pd
 import numpy as np
 import os.path
-from scipy.sparse import coo_matrix
+from scipy.sparse import coo_matrix, save_npz
 pd.set_option('display.max_columns',500)
 os.chdir('/Users/LucaButera/git/rschallenge') #modify this according to your environment
 
+#auxiliary
+def get_sparse_index_val(couples, prim_index, sec_index):
+    aux = couples.dropna(axis=0, how='any')
+    return prim_index.loc[aux.iloc[:,0].values].values, sec_index.loc[aux.iloc[:,1].values].values
+
 #Creates the ICM
-def createICM(tracks):
+def create_ICM(tracks):
     #auxiliary vars
     tg = ['tag1','tag2','tag3','tag4','tag5']
     sel = ['artist_id', 'album'] + tg
@@ -23,17 +28,17 @@ def createICM(tracks):
     ICM_tags = pd.Series(range(artists.size + albums.size, artists.size + albums.size + tags.size), index=tags)
 
     #Creating ICM
-    rows = []
-    columns = []
-    for i,r in tr_info.set_index('track_id').iterrows():
-        columns += [ICM_items[i]]*r[sel].count()
-        if  r['artist_id'] != 'NaN': rows += [ICM_artists[r['artist_id']]]
-        if r['album'] != 'NaN': rows += [ICM_albums[r['album']]]
-        if r['tag1'] != 'NaN': rows += [ICM_tags[r['tag1']]] + [ICM_tags[r['tag2']]] + [ICM_tags[r['tag3']]] + [ICM_tags[r['tag4']]] + [ICM_tags[r['tag5']]]
+    rows = np.array([], dtype='int')
+    columns = np.array([], dtype='int')
+    indexes = [ICM_artists,ICM_albums]+[ICM_tags]*5
+    for label, index in zip(sel, indexes):
+        tmp_c, tmp_r = get_sparse_index_val(tr_info[['track_id',label]], ICM_items, index)
+        rows = np.append(rows, tmp_r)
+        columns = np.append(columns, tmp_c)
 
     data = [1]*len(rows)
 
-    ICM = coo_matrix(data,(rows,columns))
+    ICM = coo_matrix((data,(rows,columns)), shape=(artists.size + albums.size + tags.size, items.size))
 
     return ICM, ICM_items, ICM_artists, ICM_albums, ICM_tags
 
@@ -41,11 +46,13 @@ def createICM(tracks):
 tr_info = pd.read_csv('Data/fixed_tracks_final.csv')
 
 #Creating ICM plus auxiliary structures
-ICM, ICM_items, ICM_artists, ICM_albums, ICM_tags = createICM(tr_info)
+ICM, ICM_items, ICM_artists, ICM_albums, ICM_tags = create_ICM(tr_info)
 
 #Saving everything
-save_npz('BuiltStructures/ICM/ICM.npz',ICM)
-ICM_items.to_csv('BuiltStructures/ICM/ICM_items.csv')
-ICM_artists.to_csv('BuiltStructures/ICM/ICM_artists.csv')
-ICM_albums.to_csv('BuiltStructures/ICM/ICM_albums.csv')
-ICM_tags.to_csv('BuiltStructures/ICM/ICM_tags.csv')
+save_npz('BuiltStructures/ICM.npz',ICM)
+ICM_items.to_csv('BuiltStructures/ICM_items.csv')
+ICM_artists.to_csv('BuiltStructures/ICM_artists.csv')
+ICM_albums.to_csv('BuiltStructures/ICM_albums.csv')
+ICM_tags.to_csv('BuiltStructures/ICM_tags.csv')
+
+print(ICM.get_shape)
