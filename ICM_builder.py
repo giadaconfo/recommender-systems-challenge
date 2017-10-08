@@ -28,15 +28,15 @@ def create_ICM(tracks):
     ICM_tags = pd.Series(range(artists.size + albums.size, artists.size + albums.size + tags.size), index=tags)
 
     #Creating ICM
-    rows = np.array([], dtype='int')
-    columns = np.array([], dtype='int')
+    rows = np.array([], dtype='int32')
+    columns = np.array([], dtype='int32')
     indexes = [ICM_artists,ICM_albums]+[ICM_tags]*5
     for label, index in zip(sel, indexes):
         tmp_c, tmp_r = get_sparse_index_val(tr_info[['track_id',label]], ICM_items, index)
         rows = np.append(rows, tmp_r)
         columns = np.append(columns, tmp_c)
 
-    data = [1]*len(rows)
+    data = np.array([1]*len(rows), dtype='int32')
 
     ICM = coo_matrix((data,(rows,columns)), shape=(artists.size + albums.size + tags.size, items.size))
 
