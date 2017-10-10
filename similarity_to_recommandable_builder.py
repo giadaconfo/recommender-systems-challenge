@@ -12,7 +12,7 @@ ICM = load_npz('BuiltStructures/prunedICM.npz').tocsc()
 rec_ICM = ICM[:,ICM_items.loc[rec_tr['track_id'].values].values.flatten()]
 
 #New index for recommendable target_tracks
-ICM_tgt_items = pd.Series(range(rec_tr.values.size), index=rec_tr.values)
+ICM_tgt_items = pd.Series(range(rec_tr.values.size), index=rec_tr['track_id'].values)
 
 #Matrix construction
 data = np.array([],dtype='int32')
@@ -23,12 +23,6 @@ n_el = 20
 
 for i in range(l):
     dot = ICM[:,i].T.dot(rec_ICM).toarray().flatten()
-
-    #NECESSARY TO UNDERSTAND ERROR, OTHERWISE CLEAR DIAGONAL WHILE RECOMMENDING
-    #if ICM_items_swapped.loc[i] in ICM_tgt_items.index:
-        #dot[ICM_tgt_items.loc[ICM_items_swapped.loc[i]]] = 0
-        #print('put diagonal to 0')
-
     sort = np.argsort(dot)[-n_el:].astype(np.int32)
     data = np.append(data, dot[sort])
     rows = np.append(rows, np.array([i]*n_el,dtype='int32'))

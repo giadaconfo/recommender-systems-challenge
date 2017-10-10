@@ -31,7 +31,7 @@ data = np.array([1]*len(rows), dtype='int32')
 
 P_T = coo_matrix((data,(rows,columns)), shape=(pl['playlist_id'].values.shape[0], ICM_items.shape[0]))
 
-ICM_tgt_items.to_csv('BuiltStructures/INDEX_pl.csv')
-save_npz('BuiltStructures/PL_TR_MAT.npz',S)
+INDEX_pl.to_csv('BuiltStructures/INDEX_pl.csv')
+save_npz('BuiltStructures/PL_TR_MAT.npz',P_T)
 
 print(P_T.get_shape)
