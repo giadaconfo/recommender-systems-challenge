@@ -10,7 +10,7 @@ data = np.array([],dtype='int32')
 rows = np.array([],dtype='int32')
 columns = np.array([],dtype='int32')
 l = ICM.shape[1]
-n_el = 20
+n_el = 100
 
 for i in range(l):
     dot = ICM[:,i].T.dot(ICM).toarray().flatten()
