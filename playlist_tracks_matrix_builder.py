@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import os.path
 from scipy.sparse import *
-os.chdir('/Users/LucaButera/git/rschallenge') #modify this according to your environment
+os.chdir('/home/giada/github/RecSys') #modify this according to your environment
 
 ICM_items = pd.read_csv('BuiltStructures/ICM_items.csv', index_col=0, header=None, names=['track_id'])
 ICM_tgt_items = pd.read_csv('BuiltStructures/ICM_tgt_items.csv', index_col=0, header=None, names=['track_id'])

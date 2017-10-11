@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import os.path
 from scipy.sparse import *
-os.chdir('/Users/LucaButera/git/rschallenge') #modify this according to your environment
+os.chdir('/home/giada/github/RecSys') #modify this according to your environment
 
 #Loading pruned ICM and tracks to recommend
 rec_tr = pd.read_csv('Data/target_tracks.csv','\t')

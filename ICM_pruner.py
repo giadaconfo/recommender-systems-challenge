@@ -3,7 +3,7 @@ import numpy as np
 import os.path
 from scipy.sparse import *
 pd.set_option('display.max_columns',500)
-os.chdir('/Users/LucaButera/git/rschallenge') #modify this according to your environment
+os.chdir('/home/giada/github/RecSys') #modify this according to your environment
 
 #Row deletion method
 def delete_row_csr(mat, i):

@@ -1,7 +1,7 @@
 import numpy as np
 import os.path
 from scipy.sparse import *
-os.chdir('/Users/LucaButera/git/rschallenge') #modify this according to your environment
+os.chdir('/home/giada/github/RecSys') #modify this according to your environment
 
 #Loading pruned ICM
 ICM = load_npz('BuiltStructures/prunedICM.npz').tocsc()

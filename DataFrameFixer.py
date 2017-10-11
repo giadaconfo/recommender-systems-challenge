@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import os.path
-os.chdir('/Users/LucaButera/git/rschallenge') #modify this according to your environment
+os.chdir('/home/giada/github/RecSys') #modify this according to your environment
 
 tr_info = pd.read_csv('Data/tracks_final.csv','\t')
 

@@ -3,7 +3,7 @@ import numpy as np
 import os.path
 from scipy.sparse import coo_matrix, save_npz
 pd.set_option('display.max_columns',500)
-os.chdir('/Users/LucaButera/git/rschallenge') #modify this according to your environment
+os.chdir('/home/giada/github/RecSys') #modify this according to your environment
 
 #auxiliary
 def get_sparse_index_val(couples, prim_index, sec_index):
