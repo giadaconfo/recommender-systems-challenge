@@ -22,7 +22,7 @@ def create_sparse_indexes(tracks, playlists, tracks_torec):
     items = np.unique(tracks['track_id'].values)
     artists = np.unique(tracks['artist_id'].values)
     albums = np.unique(tracks['album'].values)
-    tags = np.unique(tracks['tag' + str(i) for i in range(1,6)].values)
+    tags = np.unique(tracks[['tag' + str(i) for i in range(1,6)]].values)
     rec_pl = np.unique(playlists['playlist_id'].values)
     rec_tr = np.unique(tracks_torec['track_id'].values)
 
