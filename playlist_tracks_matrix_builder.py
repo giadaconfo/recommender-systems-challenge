@@ -1,12 +1,13 @@
 import numpy as np
 import pandas as pd
 import os.path
-from scipy.sparse import *
-os.chdir('/home/giada/github/RecSys') #modify this according to your environment
+from scipy import sparse as sps
+os.chdir('/Users/LucaButera/git/rschallenge')
+#os.chdir('/home/giada/github/RecSys')
 
 ICM_items = pd.read_csv('BuiltStructures/ICM_items.csv', index_col=0, header=None, names=['track_id'])
 ICM_tgt_items = pd.read_csv('BuiltStructures/ICM_tgt_items.csv', index_col=0, header=None, names=['track_id'])
-S = load_npz('BuiltStructures/RecommendableSimilarityMatrix.npz')
+S = sps.load_npz('BuiltStructures/RecommendableSimilarityMatrix.npz')
 
 pl = pd.read_csv('Data/train_final.csv','\t')
 rec_tr = pd.read_csv('Data/target_tracks.csv','\t')
@@ -29,9 +30,9 @@ for p in uniq_pl:
 
 data = np.array([1]*len(rows), dtype='int32')
 
-P_T = coo_matrix((data,(rows,columns)), shape=(pl['playlist_id'].values.shape[0], ICM_items.shape[0]))
+P_T = sps.coo_matrix((data,(rows,columns)), shape=(pl['playlist_id'].values.shape[0], ICM_items.shape[0]))
 
 INDEX_pl.to_csv('BuiltStructures/INDEX_pl.csv')
-save_npz('BuiltStructures/PL_TR_MAT.npz',P_T)
+sps.save_npz('BuiltStructures/PL_TR_MAT.npz',P_T)
 
 print(P_T.get_shape)

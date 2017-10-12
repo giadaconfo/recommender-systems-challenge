@@ -1,10 +1,11 @@
 import numpy as np
 import os.path
-from scipy.sparse import *
-os.chdir('/home/giada/github/RecSys') #modify this according to your environment
+from scipy import sparse as sps
+os.chdir('/Users/LucaButera/git/rschallenge')
+#os.chdir('/home/giada/github/RecSys')
 
 #Loading pruned ICM
-ICM = load_npz('BuiltStructures/prunedICM.npz').tocsc()
+ICM = sps.load_npz('BuiltStructures/prunedICM.npz').tocsc()
 
 data = np.array([],dtype='int32')
 rows = np.array([],dtype='int32')
@@ -21,8 +22,8 @@ for i in range(l):
     columns = np.append(columns, sort)
     print(i)
 
-S = coo_matrix((data,(rows,columns)), shape=(l, l))
+S = sps.coo_matrix((data,(rows,columns)), shape=(l, l))
 
-save_npz('BuiltStructures/SimilarityMatrix.npz',S)
+sps.save_npz('BuiltStructures/SimilarityMatrix.npz',S)
 
 print(S.get_shape)

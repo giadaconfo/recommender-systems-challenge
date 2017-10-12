@@ -1,9 +1,10 @@
 import pandas as pd
 import numpy as np
 import os.path
-from scipy.sparse import coo_matrix, save_npz
+from scipy import sparse as sps
 pd.set_option('display.max_columns',500)
-os.chdir('/home/giada/github/RecSys') #modify this according to your environment
+os.chdir('/Users/LucaButera/git/rschallenge')
+#os.chdir('/home/giada/github/RecSys')
 
 #auxiliary
 def get_sparse_index_val(couples, prim_index, sec_index):
@@ -38,7 +39,7 @@ def create_ICM(tracks):
 
     data = np.array([1]*len(rows), dtype='int32')
 
-    ICM = coo_matrix((data,(rows,columns)), shape=(artists.size + albums.size + tags.size, items.size))
+    ICM = sps.coo_matrix((data,(rows,columns)), shape=(artists.size + albums.size + tags.size, items.size))
 
     return ICM, ICM_items, ICM_artists, ICM_albums, ICM_tags
 
@@ -49,7 +50,7 @@ tr_info = pd.read_csv('Data/fixed_tracks_final.csv')
 ICM, ICM_items, ICM_artists, ICM_albums, ICM_tags = create_ICM(tr_info)
 
 #Saving everything
-save_npz('BuiltStructures/ICM.npz',ICM)
+sps.save_npz('BuiltStructures/ICM.npz',ICM)
 ICM_items.to_csv('BuiltStructures/ICM_items.csv')
 ICM_artists.to_csv('BuiltStructures/ICM_artists.csv')
 ICM_albums.to_csv('BuiltStructures/ICM_albums.csv')

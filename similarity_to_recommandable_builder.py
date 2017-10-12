@@ -1,14 +1,15 @@
 import numpy as np
 import pandas as pd
 import os.path
-from scipy.sparse import *
-os.chdir('/home/giada/github/RecSys') #modify this according to your environment
+from scipy import sparse as sps
+os.chdir('/Users/LucaButera/git/rschallenge')
+#os.chdir('/home/giada/github/RecSys')
 
 #Loading pruned ICM and tracks to recommend
 rec_tr = pd.read_csv('Data/target_tracks.csv','\t')
 ICM_items = pd.read_csv('BuiltStructures/ICM_items.csv', index_col=0, header=None, names=['track_id'])
 ICM_items_swapped = pd.Series(ICM_items.index.values, index=ICM_items )
-ICM = load_npz('BuiltStructures/prunedICM.npz').tocsc()
+ICM = sps.load_npz('BuiltStructures/prunedICM.npz').tocsc()
 rec_ICM = ICM[:,ICM_items.loc[rec_tr['track_id'].values].values.flatten()]
 
 #New index for recommendable target_tracks
@@ -19,7 +20,7 @@ data = np.array([],dtype='int32')
 rows = np.array([],dtype='int32')
 columns = np.array([],dtype='int32')
 l = ICM.shape[1]
-n_el = 100
+n_el = 20
 
 for i in range(l):
     dot = ICM[:,i].T.dot(rec_ICM).toarray().flatten()
@@ -29,9 +30,9 @@ for i in range(l):
     columns = np.append(columns, sort)
     print(i)
 
-S = coo_matrix((data,(rows,columns)), shape=(l, rec_tr.shape[0]))
+S = sps.coo_matrix((data,(rows,columns)), shape=(l, rec_tr.shape[0]))
 
 ICM_tgt_items.to_csv('BuiltStructures/ICM_tgt_items.csv')
-save_npz('BuiltStructures/RecommendableSimilarityMatrix.npz',S)
+sps.save_npz('BuiltStructures/RecommendableSimilarityMatrix.npz',S)
 
 print(S.get_shape)

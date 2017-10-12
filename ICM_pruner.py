@@ -1,9 +1,10 @@
 import pandas as pd
 import numpy as np
 import os.path
-from scipy.sparse import *
+from scipy import sparse as sps
 pd.set_option('display.max_columns',500)
-os.chdir('/home/giada/github/RecSys') #modify this according to your environment
+os.chdir('/Users/LucaButera/git/rschallenge')
+#os.chdir('/home/giada/github/RecSys')
 
 #Row deletion method
 def delete_row_csr(mat, i):
@@ -30,7 +31,7 @@ def prune_useless(mat):
         delete_row_csr(mat, i)
 
 #Loading ICM
-ICM = load_npz('BuiltStructures/ICM.npz').tocsr()
+ICM = sps.load_npz('BuiltStructures/ICM.npz').tocsr()
 
 #Pruning
 print('Number of elements before pruning is: ' + str(ICM.nnz))
@@ -38,5 +39,5 @@ prune_useless(ICM)
 print('Number of elements after pruning is: ' + str(ICM.nnz))
 
 #Saving pruned ICM
-save_npz('BuiltStructures/prunedICM.npz', ICM)
+sps.save_npz('BuiltStructures/prunedICM.npz', ICM)
 print(ICM.get_shape)
