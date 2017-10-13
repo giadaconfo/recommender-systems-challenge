@@ -4,8 +4,11 @@ import os.path
 from scipy import sparse as sps
 import collections
 
-def fix_tracks_format(data):
+def fix_tracks_format(df):
+    data = df.copy()
     data['album'] = data['album'].apply(fix_artists)
+    data['playcount'] = data['playcount'].apply(fix_playcounts)
+    data['duration'] = data['duration'].apply(fix_durations)
     data[['tag1','tag2','tag3','tag4','tag5']] = data['tags'].apply(fix_tags)
     data.drop(labels='tags', axis=1, inplace=True)
     return data
@@ -16,9 +19,15 @@ def fix_artists(val):
 def fix_tags(val):
     return pd.Series(val[1:-1].split(', '), dtype='int') if val != '[None]' and val != '[]' else pd.Series(['NaN']*5)
 
+def fix_playcounts(val):
+    return 'hi_playcount' if val >= 8000 else 'NaN'
+
+def fix_durations(val):
+    return 'hi_duration' if val >= 340000 else 'NaN'
+
 #Richiede fixed_tracks_final, target_playlists e target_tracks
 #Restituisce 3 pandas.Series per indicizzare item, target items e target playlists, e una namedtuple con gli attributi
-def create_sparse_indexes(tracks, playlists, tracks_torec):
+'''def create_sparse_indexes(tracks, playlists, tracks_torec):
     items = np.unique(tracks['track_id'].values)
     artists = np.unique(tracks['artist_id'].values)
     albums = np.unique(tracks['album'].values)
@@ -36,35 +45,78 @@ def create_sparse_indexes(tracks, playlists, tracks_torec):
     SparseIndexes = collections.namedtuple('SparseIndexes', ['artists','albums','tags'])
     Indexes = SparseIndexes([IX_artists,IX_albums,IX_tags])
 
+    return IX_items, IX_tgt_items, IX_tgt_playlists, Indexes'''
+
+def create_sparse_indexes(tracks_info=None, playlists=None, tracks_reduced=None, attr_list=None):
+    if tracks_info:
+        items = np.unique(tracks_info['track_id'].values)
+        IX_items = pd.Series(range(items.size), index=items)
+    else:
+        IX_items=None
+
+    if playlists:
+        rec_pl = np.unique(playlists['playlist_id'].values)
+        IX_tgt_playlists = pd.Series(range(rec_pl.size), index=rec_pl)
+    else:
+        IX_tgt_playlists=None
+
+    if tracks_reduced:
+        rec_tr = np.unique(tracks_reduced['track_id'].values)
+        IX_tgt_items = pd.Series(range(rec_tr.size), index=rec_tr)
+    else:
+        IX_tgt_items=None
+
+    if attr_list:
+        attributes = [np.unique(tracks_info[i].values) for i in attr_list and not i == 'tags']
+        if 'tags' in attr_list:
+            attributes += np.unique(tracks_info[['tag' + str(i) for i in range(1,6)]].values)
+            attr_list.append(attr_list.pop(attr_list.index('tag')))
+        bound = 0
+        indexes = []
+        for attr in attributes:
+            indexes += pd.Series(range(bound, bound + attr.size), index=attr)
+            bound += attr.size
+        SparseIndexes = collections.namedtuple('SparseIndexes', attr_list)
+        Indexes = SparseIndexes(indexes)
+    else:
+        Indexes=None
+
     return IX_items, IX_tgt_items, IX_tgt_playlists, Indexes
 
-def create_ICM(attributes, IX_items, Indexes):
+def create_ICM(tracks_info, IX_items, Indexes, n_min_attr):
     rows = np.array([], dtype='int32')
     columns = np.array([], dtype='int32')
+    attributes = Indexes._fields if 'tags' not in Indexes._fields else [i for i in Indexes._fields if not i == 'tags'] + ['tag' + str(i) for i in range(1,6)]
     for label in attributes:
-        tmp_c, tmp_r = get_sparse_index_val(tr_info[['track_id',label]], IX_items, Indexes.label)
+        tmp_c, tmp_r = get_sparse_index_val(tracks_info[['track_id',label]], IX_items, Indexes.label)
         rows = np.append(rows, tmp_r)
         columns = np.append(columns, tmp_c)
 
     data = np.array([1]*len(rows), dtype='int32')
     att_size = 0
-    for field in Indexes._fields:
-        att_size += Indexes.field.index.values.size
+    for attr in Indexes:
+        att_size += attr.index.values.size
 
     ICM = sps.coo_matrix((data,(rows,columns)), shape=(att_size, IX_items.index.values.size))
+
+    if n_min_attr:
+        prune_useless(ICM, n_min_attr)
+
+    return ICM
+
 
 def get_sparse_index_val(couples, prim_index, sec_index):
     aux = couples.dropna(axis=0, how='any')
     return prim_index.loc[aux.iloc[:,0].values].values, sec_index.loc[aux.iloc[:,1].values].values
 
-def prune_useless(mat):
+def prune_useless(mat, n_min_attr):
     mat.tocsr()
     to_del = []
 
     print('Number of elements before pruning is: ' + str(mat.nnz))
 
     for i in range(mat.shape[0]):
-        if mat[i,:].nnz == 1:
+        if mat[i,:].nnz < n_min_attr:
             to_del += [i - len(to_del)]
     for i in to_del:
         delete_row_csr(mat, i)
@@ -102,7 +154,16 @@ def create_tgt_URM(IX_tgt_playlists, IX_items, playlist_to_track):
     URM = sps.coo_matrix((data,(rows,columns)), shape=(pl['playlist_id'].values.shape[0], ICM_items.shape[0]))
     return URM
 
-def create_Smatrix(ICM, n_el=20, IX_tgt_items=None, IX_items=None):
+def calculate_dot(ICM_i, rec_ICM):
+    return ICM_i.T.dot(rec_ICM).toarray().flatten()
+
+def calculate_cos(ICM_i, rec_ICM):
+    return
+
+def create_Smatrix(ICM, n_el=20, measure='dot', IX_tgt_items=None, IX_items=None):
+    Measures = collections.namedtuple('Measures', ['dot', 'cos'])
+    SimMeasures = Measures([calculate_dot, calculate_cos])
+
     data = np.array([],dtype='int32')
     rows = np.array([],dtype='int32')
     columns = np.array([],dtype='int32')
@@ -116,13 +177,32 @@ def create_Smatrix(ICM, n_el=20, IX_tgt_items=None, IX_items=None):
         h = l
 
     for i in range(l):
-        dot = ICM[:,i].T.dot(rec_ICM).toarray().flatten()
-        if (IX_tgt_items is None or IX_items is None): dot[i] = 0
-        sort = np.argsort(dot)[-n_el:].astype(np.int32)
-        data = np.append(data, dot[sort])
+        sim = SimMeasures.measure(ICM[:,i], rec_ICM)
+        if (IX_tgt_items is None or IX_items is None): sim[i] = 0
+        sort = np.argsort(sim)[-n_el:].astype(np.int32)
+        data = np.append(data, sim[sort])
         rows = np.append(rows, np.array([i]*n_el,dtype='int32'))
         columns = np.append(columns, sort)
         print(i)
 
     S = sps.coo_matrix((data,(rows,columns)), shape=(l, h))
     return S
+
+def top5_outside_playlist(ratings, p_id):
+    tgt_in_playlist = np.intersect1d(train_final[train_final['playlist_id'] == INDEX_pl.index.values[p_id]]['track_id'].values, ICM_tgt_items.index.values, assume_unique=True)
+    ratings[ICM_tgt_items.loc[tgt_in_playlist]['track_id'].values] = 0 #line to change
+
+    if(np.count_nonzero(ratings) < 5): sys.exit('Not enough similarity')
+
+    top5_ind = np.flip(np.argsort(ratings)[-5:], axis=0) #Contains the index of the recommended songs
+    return ICM_tgt_items.index.values[top5_ind]
+
+def sub_format(l):
+    res = " ".join(np.array_str(l).split())[1:-1]
+    return res
+'''Requires:
+    The dataset generated from the recommender system
+    The test set
+    A string indicating the metric for evaluation'''
+def evaluate(results, test, eval_metric='MAP'):
+    pass
