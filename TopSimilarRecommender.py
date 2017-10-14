@@ -21,7 +21,7 @@ class TopSimilarRecommender:
         A list of attributes corresponding to column names in the dataser
         The minimum number of attribute occurences to keep it in the ICM
         The number of similarity elements to keep in the S matrix calculation'''
-    def fit(tracks_info, tgt_tracks=None, attributes, n_min_attr=2, measure='dot', shrinkage=0, n_el_sim=20):
+    def fit(tracks_info, attributes, tgt_tracks=None, n_min_attr=2, measure='dot', shrinkage=0, n_el_sim=20):
         tr_info_fixed = rs.fix_tracks_format(tracks_info)
         print('Fixed dataset')
         self.IX_items, self.IX_tgt_items, _, self.IX_attr = rs.create_sparse_indexes(tracks_info=tr_info_fixed, tracks_reduced=tgt_tracks, attr_list=attributes)

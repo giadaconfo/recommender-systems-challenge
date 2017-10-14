@@ -190,7 +190,7 @@ def create_Smatrix(ICM, n_el=20, measure='dot',shrinkage=0, IX_tgt_items=None, I
         sim = SimMeasures.measure(ICM[:,i], rec_ICM, shrinkage)
         if (IX_tgt_items is None and IX_items is None):
             sim[i] = 0
-        else if (IX_tgt_items is not None and IX_items is not None and IX_items.index.values[i] in IX_tgt_items.index.values):
+        elif (IX_tgt_items is not None and IX_items is not None and IX_items.index.values[i] in IX_tgt_items.index.values):
             sim[IX_tgt_items.loc[IX_items.index.values[i]]] = 0
             print('Diagonal to 0')
         else:
@@ -200,7 +200,7 @@ def create_Smatrix(ICM, n_el=20, measure='dot',shrinkage=0, IX_tgt_items=None, I
         rows = np.append(rows, np.array([i]*n_el,dtype='int32'))
         columns = np.append(columns, sort)
         if (i % 1000 == 0):
-            print('Computed ' + str(i) + ' similarities over ' + str(l) ' with ' + measure + ' measure and ' + str(shrinkage) + ' shrinkage.')
+            print('Computed ' + str(i) + ' similarities over ' + str(l) + ' with ' + measure + ' measure and ' + str(shrinkage) + ' shrinkage.')
 
     S = sps.coo_matrix((data,(rows,columns)), shape=(l, h))
     return S
