@@ -2,7 +2,9 @@ import numpy as np
 import pandas as pd
 import os.path
 from scipy import sparse as sps
+import math
 import collections
+import sys
 
 def fix_tracks_format(df):
     data = df.copy()
@@ -83,7 +85,7 @@ def create_sparse_indexes(tracks_info=None, playlists=None, tracks_reduced=None,
 
     return IX_items, IX_tgt_items, IX_tgt_playlists, Indexes
 
-def create_ICM(tracks_info, IX_items, Indexes, n_min_attr):
+def create_ICM(tracks_info, IX_items, Indexes, n_min_attr=0):
     rows = np.array([], dtype='int32')
     columns = np.array([], dtype='int32')
     attributes = Indexes._fields if 'tags' not in Indexes._fields else [i for i in Indexes._fields if not i == 'tags'] + ['tag' + str(i) for i in range(1,6)]
@@ -99,7 +101,7 @@ def create_ICM(tracks_info, IX_items, Indexes, n_min_attr):
 
     ICM = sps.coo_matrix((data,(rows,columns)), shape=(att_size, IX_items.index.values.size))
 
-    if n_min_attr:
+    if n_min_attr >= 2:
         prune_useless(ICM, n_min_attr)
 
     return ICM
@@ -113,7 +115,8 @@ def prune_useless(mat, n_min_attr):
     mat.tocsr()
     to_del = []
 
-    print('Number of elements before pruning is: ' + str(mat.nnz))
+    print('Pruning attributes.')
+    print('Number of attributes before pruning is: ' + str(mat.shape[0]))
 
     for i in range(mat.shape[0]):
         if mat[i,:].nnz < n_min_attr:
@@ -121,7 +124,7 @@ def prune_useless(mat, n_min_attr):
     for i in to_del:
         delete_row_csr(mat, i)
 
-    print('Number of elements after pruning is: ' + str(mat.nnz))
+    print('Number of attributes after pruning is: ' + str(mat.shape[0]))
     return
 
 def delete_row_csr(mat, i):
@@ -143,47 +146,61 @@ def delete_row_csr(mat, i):
 def create_tgt_URM(IX_tgt_playlists, IX_items, playlist_to_track):
     rows = np.array([], dtype='int32')
     columns = np.array([], dtype='int32')
-    for p in IX_tgt_playlists.index.values:
+    for p in IX_tgt_playlists.index.shape[0]:
         tracks = playlist_to_track[playlist_to_track['playlist_id'] == p]['track_id'].values.astype('int32')
         rows = np.append(rows, np.array([IX_tgt_playlists.loc[p]]*tracks.size,dtype='int32'))
         columns = np.append(columns, IX_items.loc[tracks])
-        print(INDEX_pl.loc[p])
+        if (INDEX_pl.loc[p] % 1000 == 0):
+            print('Calculated ' + str(INDEX_pl.loc[p]) + ' users ratings over ' + str(IX_tgt_playlists.index.shape[0]))
 
     data = np.array([1]*len(rows), dtype='int32')
 
     URM = sps.coo_matrix((data,(rows,columns)), shape=(pl['playlist_id'].values.shape[0], ICM_items.shape[0]))
     return URM
 
-def calculate_dot(ICM_i, rec_ICM):
+def calculate_dot(ICM_i, rec_ICM, shrinkage=0):
     return ICM_i.T.dot(rec_ICM).toarray().flatten()
 
-def calculate_cos(ICM_i, rec_ICM):
-    return
+def calculate_cos(ICM_i, rec_ICM, shrinkage=0):
+    dot = ICM_i.T.dot(rec_ICM).toarray().ravel()
+    i_module = math.sqrt(np.sum([i**2 for i in ICM_i.toarray().ravel()]))
+    ICM_modules = np.sqrt(rec_ICM.copy().power(2).sum(axis=1).toarray().ravel())
+    cos = np.divide(dot, ICM_modules * i_module + shrinkage)
+    return cos
 
-def create_Smatrix(ICM, n_el=20, measure='dot', IX_tgt_items=None, IX_items=None):
+def create_Smatrix(ICM, n_el=20, measure='dot',shrinkage=0, IX_tgt_items=None, IX_items=None):
     Measures = collections.namedtuple('Measures', ['dot', 'cos'])
     SimMeasures = Measures([calculate_dot, calculate_cos])
 
-    data = np.array([],dtype='int32')
+    data = np.array([],dtype='float32')
     rows = np.array([],dtype='int32')
     columns = np.array([],dtype='int32')
     l = ICM.shape[1]
 
+    ICM.tocsc()
     if (IX_tgt_items is not None and IX_items is not None):
         rec_ICM = ICM[:,IX_items.loc[IX_tgt_items.index.values].values.flatten()]
+        rec_ICM.tocsc()
         h = IX_tgt_items.index.values.size
     else:
         rec_ICM = ICM
         h = l
 
     for i in range(l):
-        sim = SimMeasures.measure(ICM[:,i], rec_ICM)
-        if (IX_tgt_items is None or IX_items is None): sim[i] = 0
-        sort = np.argsort(sim)[-n_el:].astype(np.int32)
+        sim = SimMeasures.measure(ICM[:,i], rec_ICM, shrinkage)
+        if (IX_tgt_items is None and IX_items is None):
+            sim[i] = 0
+        else if (IX_tgt_items is not None and IX_items is not None and IX_items.index.values[i] in IX_tgt_items.index.values):
+            sim[IX_tgt_items.loc[IX_items.index.values[i]]] = 0
+            print('Diagonal to 0')
+        else:
+            sys.exit('Error: IX_items and IX_tgt_items must be both None or both defined')
+        sort = np.argsort(sim)[-n_el:].astype(np.float32)
         data = np.append(data, sim[sort])
         rows = np.append(rows, np.array([i]*n_el,dtype='int32'))
         columns = np.append(columns, sort)
-        print(i)
+        if (i % 1000 == 0):
+            print('Computed ' + str(i) + ' similarities over ' + str(l) ' with ' + measure + ' measure and ' + str(shrinkage) + ' shrinkage.')
 
     S = sps.coo_matrix((data,(rows,columns)), shape=(l, h))
     return S
@@ -205,4 +222,22 @@ def sub_format(l):
     The test set
     A string indicating the metric for evaluation'''
 def evaluate(results, test, eval_metric='MAP'):
-    pass
+    if eval_metric == 'MAP':
+        APs = results.apply(calculate_AP, test)
+        res = (APs.sum())/results.shape[0]
+    return res
+
+def calculate_AP(row, test):
+    p_id = row['playlist_id'].values[0]
+    recs = np.fromstring(row['track_ids'].values[0], dtype=float, sep=' ')
+
+    AP = 0
+    rel_sum = 0
+    n_rel_items = min(test[test['playlist_id'] == p_id].shape[0],5)
+    for i in range(recs.size):
+        rel = 1 if ((test['playlist_id'] == p_id) & (test['track_id'] == recs[i])).any() else 0
+        rel_sum += rel
+        P = rel_sum/i+1
+        AP += (P * rel)/n_rel_items
+
+    return AP
