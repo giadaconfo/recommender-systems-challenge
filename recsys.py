@@ -8,24 +8,24 @@ import sys
 
 def fix_tracks_format(df):
     data = df.copy()
-    data['album'] = data['album'].apply(fix_artists)
+    data['album'] = data['album'].apply(fix_albums)
     data['playcount'] = data['playcount'].apply(fix_playcounts)
     data['duration'] = data['duration'].apply(fix_durations)
     data[['tag1','tag2','tag3','tag4','tag5']] = data['tags'].apply(fix_tags)
     data.drop(labels='tags', axis=1, inplace=True)
     return data
 
-def fix_artists(val):
-    return int(val[1:-1]) if val != '[None]' and val != '[]' else 'NaN'
+def fix_albums(val):
+    return int(val[1:-1]) if val != '[None]' and val != '[]' else float('NaN')
 
 def fix_tags(val):
-    return pd.Series(val[1:-1].split(', '), dtype='int') if val != '[None]' and val != '[]' else pd.Series(['NaN']*5)
+    return pd.Series(val[1:-1].split(', '), dtype='int') if val != '[None]' and val != '[]' else pd.Series([float('NaN')]*5)
 
 def fix_playcounts(val):
-    return 'hi_playcount' if val >= 8000 else 'NaN'
+    return 'hi_playcount' if val >= 8000 else float('NaN')
 
 def fix_durations(val):
-    return 'hi_duration' if val >= 340000 else 'NaN'
+    return 'hi_duration' if val >= 340000 else float('NaN')
 
 #Richiede fixed_tracks_final, target_playlists e target_tracks
 #Restituisce 3 pandas.Series per indicizzare item, target items e target playlists, e una namedtuple con gli attributi
@@ -50,36 +50,39 @@ def fix_durations(val):
     return IX_items, IX_tgt_items, IX_tgt_playlists, Indexes'''
 
 def create_sparse_indexes(tracks_info=None, playlists=None, tracks_reduced=None, attr_list=None):
-    if tracks_info:
+    if tracks_info is not None:
         items = np.unique(tracks_info['track_id'].values)
         IX_items = pd.Series(range(items.size), index=items)
     else:
         IX_items=None
 
-    if playlists:
+    if playlists is not None:
         rec_pl = np.unique(playlists['playlist_id'].values)
         IX_tgt_playlists = pd.Series(range(rec_pl.size), index=rec_pl)
     else:
         IX_tgt_playlists=None
 
-    if tracks_reduced:
+    if tracks_reduced is not None:
         rec_tr = np.unique(tracks_reduced['track_id'].values)
         IX_tgt_items = pd.Series(range(rec_tr.size), index=rec_tr)
     else:
         IX_tgt_items=None
 
-    if attr_list:
-        attributes = [np.unique(tracks_info[i].values) for i in attr_list and not i == 'tags']
+    if attr_list is not None:
+        attributes = [[] for i in range(len(attr_list))]
+        for i, a in zip(range(len(attr_list)), attr_list):
+            if not a == 'tags':
+                attributes[i] = np.unique(tracks_info[a].values)
         if 'tags' in attr_list:
-            attributes += np.unique(tracks_info[['tag' + str(i) for i in range(1,6)]].values)
-            attr_list.append(attr_list.pop(attr_list.index('tag')))
+            attributes[-1] = np.unique(tracks_info[['tag' + str(j) for j in range(1,6)]].values)
+            attr_list.append(attr_list.pop(attr_list.index('tags')))
         bound = 0
-        indexes = []
-        for attr in attributes:
-            indexes += pd.Series(range(bound, bound + attr.size), index=attr)
+        indexes = [[] for i in range(len(attr_list))]
+        for i,attr in zip(range(len(attr_list)),attributes):
+            indexes[i] = pd.Series(range(bound, bound + attr.size), index=attr)
             bound += attr.size
         SparseIndexes = collections.namedtuple('SparseIndexes', attr_list)
-        Indexes = SparseIndexes(indexes)
+        Indexes = SparseIndexes(*indexes)
     else:
         Indexes=None
 
@@ -90,7 +93,8 @@ def create_ICM(tracks_info, IX_items, Indexes, n_min_attr=0):
     columns = np.array([], dtype='int32')
     attributes = Indexes._fields if 'tags' not in Indexes._fields else [i for i in Indexes._fields if not i == 'tags'] + ['tag' + str(i) for i in range(1,6)]
     for label in attributes:
-        tmp_c, tmp_r = get_sparse_index_val(tracks_info[['track_id',label]], IX_items, Indexes.label)
+        ix_label = label if 'tag' not in label else 'tags'
+        tmp_c, tmp_r = get_sparse_index_val(tracks_info[['track_id',label]], IX_items, getattr(Indexes,ix_label))
         rows = np.append(rows, tmp_r)
         columns = np.append(columns, tmp_c)
 
@@ -112,7 +116,7 @@ def get_sparse_index_val(couples, prim_index, sec_index):
     return prim_index.loc[aux.iloc[:,0].values].values, sec_index.loc[aux.iloc[:,1].values].values
 
 def prune_useless(mat, n_min_attr):
-    mat.tocsr()
+    mat = mat.tocsr()
     to_del = []
 
     print('Pruning attributes.')
@@ -128,7 +132,7 @@ def prune_useless(mat, n_min_attr):
     return
 
 def delete_row_csr(mat, i):
-    if not isinstance(mat, csr_matrix):
+    if not isinstance(mat, sps.csr_matrix):
         raise ValueError("works only for CSR format -- use .tocsr() first")
     n = mat.indptr[i+1] - mat.indptr[i]
     if n > 0:
@@ -146,12 +150,12 @@ def delete_row_csr(mat, i):
 def create_tgt_URM(IX_tgt_playlists, IX_items, playlist_to_track):
     rows = np.array([], dtype='int32')
     columns = np.array([], dtype='int32')
-    for p in IX_tgt_playlists.index.shape[0]:
+    for p in IX_tgt_playlists.index.values:
         tracks = playlist_to_track[playlist_to_track['playlist_id'] == p]['track_id'].values.astype('int32')
         rows = np.append(rows, np.array([IX_tgt_playlists.loc[p]]*tracks.size,dtype='int32'))
         columns = np.append(columns, IX_items.loc[tracks])
-        if (INDEX_pl.loc[p] % 1000 == 0):
-            print('Calculated ' + str(INDEX_pl.loc[p]) + ' users ratings over ' + str(IX_tgt_playlists.index.shape[0]))
+        if (IX_tgt_playlists.loc[p] % 1000 == 0):
+            print('Calculated ' + str(IX_tgt_playlists.loc[p]) + ' users ratings over ' + str(IX_tgt_playlists.index.shape[0]))
 
     data = np.array([1]*len(rows), dtype='int32')
 
@@ -169,33 +173,35 @@ def calculate_cos(ICM_i, rec_ICM, shrinkage=0):
     return cos
 
 def create_Smatrix(ICM, n_el=20, measure='dot',shrinkage=0, IX_tgt_items=None, IX_items=None):
+    if ((IX_tgt_items is not None and IX_items is None) or (IX_tgt_items is None and IX_items is not None)):
+        sys.exit('Error: IX_items and IX_tgt_items must be both None or both defined')
+
     Measures = collections.namedtuple('Measures', ['dot', 'cos'])
-    SimMeasures = Measures([calculate_dot, calculate_cos])
+    SimMeasures = Measures(*[calculate_dot, calculate_cos])
 
     data = np.array([],dtype='float32')
     rows = np.array([],dtype='int32')
     columns = np.array([],dtype='int32')
     l = ICM.shape[1]
 
-    ICM.tocsc()
+    ICM = ICM.tocsc()
     if (IX_tgt_items is not None and IX_items is not None):
         rec_ICM = ICM[:,IX_items.loc[IX_tgt_items.index.values].values.flatten()]
-        rec_ICM.tocsc()
+        rec_ICM = rec_ICM.tocsc()
         h = IX_tgt_items.index.values.size
     else:
         rec_ICM = ICM
         h = l
 
     for i in range(l):
-        sim = SimMeasures.measure(ICM[:,i], rec_ICM, shrinkage)
+        sim = getattr(SimMeasures, measure)(ICM[:,i], rec_ICM, shrinkage)
         if (IX_tgt_items is None and IX_items is None):
             sim[i] = 0
         elif (IX_tgt_items is not None and IX_items is not None and IX_items.index.values[i] in IX_tgt_items.index.values):
             sim[IX_tgt_items.loc[IX_items.index.values[i]]] = 0
             print('Diagonal to 0')
-        else:
-            sys.exit('Error: IX_items and IX_tgt_items must be both None or both defined')
-        sort = np.argsort(sim)[-n_el:].astype(np.float32)
+
+        sort = np.argsort(sim)[-n_el:].astype(np.int32)
         data = np.append(data, sim[sort])
         rows = np.append(rows, np.array([i]*n_el,dtype='int32'))
         columns = np.append(columns, sort)
