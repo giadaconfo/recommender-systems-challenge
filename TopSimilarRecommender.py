@@ -17,17 +17,21 @@ class TopSimilarRecommender:
 
     '''Requires:
         The dataset containing the tracks informations
+        The dataset containing the tracks to recommend
         A list of attributes corresponding to column names in the dataser
         The minimum number of attribute occurences to keep it in the ICM
         The number of similarity elements to keep in the S matrix calculation'''
-    def fit(tracks_info, attributes, n_min_attr, measure, n_el_sim):
+    def fit(tracks_info, tgt_tracks=None, attributes, n_min_attr=2, measure='dot', shrinkage=0, n_el_sim=20):
         tr_info_fixed = rs.fix_tracks_format(tracks_info)
         print('Fixed dataset')
-        self.IX_items, self.IX_tgt_items, self.IX_tgt_playlists, self.IX_attr = rs.create_sparse_indexes(tr_info_fixed, attr_list=attributes)
+        self.IX_items, self.IX_tgt_items, _, self.IX_attr = rs.create_sparse_indexes(tracks_info=tr_info_fixed, tracks_reduced=tgt_tracks, attr_list=attributes)
         print('Calculated Indices')
         self.ICM = rs.create_ICM(tr_info_fixed, self.IX_items, self.IX_attr, n_min_attr)
         print('ICM built')
-        self.S = rs.create_Smatrix(self.ICM, n_el_sim, measure)
+        if IX_tgt_items:
+            self.S = rs.create_Smatrix(self.ICM, n_el_sim, measure, shrinkage, IX_tgt_items, IX_items)
+        else:
+            self.S = rs.create_Smatrix(self.ICM, n_el_sim, measure, shrinkage)
         print('Similarity built')
 
     '''Requires:
@@ -36,6 +40,7 @@ class TopSimilarRecommender:
         Put normalize to True to divide similarities by the item vector lenght,
         useful with many similarities and cosin measure'''
     def recommend(tgt_playlists, train_playlists_tracks_pairs, normalize=False):
+        _, _, self.IX_tgt_playlists, _ = rs.create_sparse_indexes(playlists=tgt_playlists)
         URM = rs.create_tgt_URM(self.IX_tgt_playlists, self.IX_items, train_playlists_tracks_pairs)
         print('URM built')
         tgt_playlists_ix = self.IX_tgt_playlists.loc[tgt_playlists['playlist_id'].values]
