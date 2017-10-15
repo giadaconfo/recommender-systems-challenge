@@ -24,13 +24,12 @@ for i in np.unique(tracks_in_test_pl['playlist_id'].values):
     #randomly selects 5 elements from playlist i and save indexes
     tmp = (tracks_in_test_pl.where(tracks_in_test_pl['playlist_id']==i).dropna().sample(5)).index
     #insert the items selected in tracks_removed dataFrame
-    tracks_removed= tracks_removed.append(tracks_in_test_pl.take(tmp)).astype(int)
+    tracks_removed= tracks_removed.append(tracks_in_test_pl.take(tmp)).astype('int64')
     #remove tracks from the original dataframe
     indexes_to_remove=np.append(indexes_to_remove, values=tmp)
 
 tracks_in_train= pd.DataFrame(tracks_in_test_pl)
 tracks_in_train.drop(indexes_to_remove, inplace=True)
-tracks_removed
 
 tgt_test_tracks= pd.DataFrame(tracks_in_test_pl['track_id'])
 print(tgt_test_tracks.shape)
