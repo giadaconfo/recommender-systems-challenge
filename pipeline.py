@@ -42,7 +42,7 @@ run_data = {'recommender_type' : rec.__class__.__name__,
                                 'measure' : fit_dict['measure'],
                                 'shrinkage' : fit_dict['shrinkage'],
                                 'n_el_sim' : fit_dict['n_el_sim']},
-            'recommend_parameters' : {'normalize' : recommend_dict['normalize']}
+            'recommend_parameters' : {'normalize' : recommend_dict['normalize']},
             'evaluation_result' : 0}
 
 with open('runs_data.json', 'w') as fp:
