@@ -242,7 +242,7 @@ def calculate_AP(row, test):
     rel_sum = 0
     n_rel_items = min(test[test['playlist_id'] == p_id].shape[0],5)
     for i in range(recs.size):
-        rel = 1 if ((test['playlist_id'] == p_id) & (test['track_id'] == recs[i])).any() else 0
+        rel = 1 if (((test['playlist_id'] == p_id) & (test['track_id'] == recs[i])).any()) == True else 0
         rel_sum += rel
         P = rel_sum/i+1
         AP += (P * rel)/n_rel_items
