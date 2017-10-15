@@ -3,6 +3,7 @@ import pandas as pd
 import recsys as rs
 import json
 import notipy
+import random
 import TopSimilarRecommender as TSR
 import os.path
 os.chdir('/Users/LucaButera/git/rschallenge')
