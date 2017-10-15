@@ -211,14 +211,14 @@ def create_Smatrix(ICM, n_el=20, measure='dot',shrinkage=0, IX_tgt_items=None, I
     S = sps.coo_matrix((data,(rows,columns)), shape=(l, h))
     return S
 
-def top5_outside_playlist(ratings, p_id):
-    tgt_in_playlist = np.intersect1d(train_final[train_final['playlist_id'] == INDEX_pl.index.values[p_id]]['track_id'].values, ICM_tgt_items.index.values, assume_unique=True)
-    ratings[ICM_tgt_items.loc[tgt_in_playlist]['track_id'].values] = 0 #line to change
+def top5_outside_playlist(ratings, p_id, train_playlists_tracks_pairs, IX_tgt_playlists, IX_tgt_items):
+    tgt_in_playlist = np.intersect1d(train_playlists_tracks_pairs[train_playlists_tracks_pairs['playlist_id'] == IX_tgt_playlists.index.values[p_id]]['track_id'].values, IX_tgt_items.index.values, assume_unique=True)
+    ratings[IX_tgt_items.loc[tgt_in_playlist]['track_id'].values] = 0 #line to change
 
     if(np.count_nonzero(ratings) < 5): sys.exit('Not enough similarity')
 
     top5_ind = np.flip(np.argsort(ratings)[-5:], axis=0) #Contains the index of the recommended songs
-    return ICM_tgt_items.index.values[top5_ind]
+    return IX_tgt_items.index.values[top5_ind]
 
 def sub_format(l):
     res = " ".join(np.array_str(l).split())[1:-1]
