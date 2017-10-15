@@ -1,8 +1,10 @@
+import numpy as np
 import pandas as pd
 import recsys as rs
 import json
 import notipy
 import TopSimilarRecommender as TSR
+os.chdir('/Users/LucaButera/git/rschallenge')
 
 train = pd.read_csv('Data/train_final.csv','\t')
 tr_info = pd.read_csv('Data/tracks_final.csv','\t')
