@@ -5,6 +5,7 @@ from scipy import sparse as sps
 import math
 import collections
 import sys
+import ctypes
 
 def fix_tracks_format(df):
     data = df.copy()
@@ -230,21 +231,24 @@ def sub_format(l):
     A string indicating the metric for evaluation'''
 def evaluate(results, test, eval_metric='MAP'):
     if eval_metric == 'MAP':
-        APs = results.apply(calculate_AP, args=test)
+        APs = results.apply(calculate_AP, axis=1, args=(test,))
         res = (APs.sum())/results.shape[0]
     return res
 
 def calculate_AP(row, test):
-    p_id = row['playlist_id'].values[0]
-    recs = np.fromstring(row['track_ids'].values[0], dtype=float, sep=' ')
+    p_id = row['playlist_id']
+    recs = np.fromstring(row['track_ids'], dtype=float, sep=' ')
 
     AP = 0
     rel_sum = 0
     n_rel_items = min(test[test['playlist_id'] == p_id].shape[0],5)
     for i in range(recs.size):
-        rel = 1 if (((test['playlist_id'] == p_id) & (test['track_id'] == recs[i])).any()) == True else 0
+        rel = 1 if ((test['playlist_id'] == p_id) & (test['track_id'] == recs[i])).any() else 0
         rel_sum += rel
-        P = rel_sum/i+1
+        P = rel_sum/(i+1)
         AP += (P * rel)/n_rel_items
 
-    return AP
+    if row.name % 1000 == 0:
+        print('Calculated AP for playlist #' + str(row.name))
+
+    return ctypes.c_float(AP)
