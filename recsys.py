@@ -23,10 +23,10 @@ def fix_tags(val):
     return pd.Series(val[1:-1].split(', '), dtype='int') if val != '[None]' and val != '[]' else pd.Series([float('NaN')]*5)
 
 def fix_playcounts(val):
-    return 'hi_playcount' if val >= 8000 else float('NaN')
+    return 1 if val >= 8000 else float('NaN')
 
 def fix_durations(val):
-    return 'hi_duration' if val >= 340000 else float('NaN')
+    return 1 if val >= 340000 else float('NaN')
 
 #Richiede fixed_tracks_final, target_playlists e target_tracks
 #Restituisce 3 pandas.Series per indicizzare item, target items e target playlists, e una namedtuple con gli attributi
@@ -71,9 +71,8 @@ def create_sparse_indexes(tracks_info=None, playlists=None, tracks_reduced=None,
 
     if attr_list is not None:
         attributes = [[] for i in range(len(attr_list))]
-        for i, a in zip(range(len(attr_list)), attr_list):
-            if not a == 'tags':
-                attributes[i] = np.unique(tracks_info[a].values)
+        for i, a in zip(range(len([i for i in attr_list if not i == 'tags'])), [i for i in attr_list if not i == 'tags']):
+            attributes[i] = np.unique(tracks_info[a].values)
         if 'tags' in attr_list:
             attributes[-1] = np.unique(tracks_info[['tag' + str(j) for j in range(1,6)]].values)
             attr_list.append(attr_list.pop(attr_list.index('tags')))
