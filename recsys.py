@@ -230,7 +230,7 @@ def sub_format(l):
     A string indicating the metric for evaluation'''
 def evaluate(results, test, eval_metric='MAP'):
     if eval_metric == 'MAP':
-        APs = results.apply(calculate_AP, test)
+        APs = results.apply(calculate_AP, args=test)
         res = (APs.sum())/results.shape[0]
     return res
 
