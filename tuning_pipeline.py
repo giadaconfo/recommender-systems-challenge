@@ -4,6 +4,7 @@ import recsys as rs
 import json
 import notipy
 import TopSimilarRecommender as TSR
+import os.path
 os.chdir('/Users/LucaButera/git/rschallenge')
 
 train = pd.read_csv('Data/train_final.csv','\t')
