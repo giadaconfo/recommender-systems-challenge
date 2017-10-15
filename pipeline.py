@@ -45,3 +45,5 @@ with open('runs_data.json', 'w') as fp:
     json.dump(run_data, fp)
 notipy.notify('Run data saved!')
 print('Run data saved!')
+
+recommendetions.to_csv('Submissions/top_similar_submission_test_pipeline.csv', index=False)

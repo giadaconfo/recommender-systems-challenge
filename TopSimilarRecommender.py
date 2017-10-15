@@ -57,7 +57,7 @@ class TopSimilarRecommender:
             if normalize:
                 avg_sims = np.divide(URM[p,:].dot(TopSimilarRecommender.S).toarray(), norm_dividend).ravel()
             avg_sims = URM[p,:].dot(TopSimilarRecommender.S).toarray().ravel()
-            top = rs.top5_outside_playlist(avg_sims, p)
+            top = rs.top5_outside_playlist(avg_sims, p, train_playlists_tracks_pairs, TopSimilarRecommender.IX_tgt_playlists, TopSimilarRecommender.IX_tgt_items)
             recommendetions = np.append(recommendetions, rs.sub_format(top))
             if (p % 1000 == 0):
                 print('Recommended ' + str(p) + ' users over ' + str(tgt_playlists_ix.shape[0]))
