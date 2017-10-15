@@ -159,7 +159,7 @@ def create_tgt_URM(IX_tgt_playlists, IX_items, playlist_to_track):
 
     data = np.array([1]*len(rows), dtype='int32')
 
-    URM = sps.coo_matrix((data,(rows,columns)), shape=(pl['playlist_id'].values.shape[0], ICM_items.shape[0]))
+    URM = sps.coo_matrix((data,(rows,columns)), shape=(IX_tgt_playlists.index.shape[0], IX_items.shape[0]))
     return URM
 
 def calculate_dot(ICM_i, rec_ICM, shrinkage=0):
@@ -213,7 +213,7 @@ def create_Smatrix(ICM, n_el=20, measure='dot',shrinkage=0, IX_tgt_items=None, I
 
 def top5_outside_playlist(ratings, p_id, train_playlists_tracks_pairs, IX_tgt_playlists, IX_tgt_items):
     tgt_in_playlist = np.intersect1d(train_playlists_tracks_pairs[train_playlists_tracks_pairs['playlist_id'] == IX_tgt_playlists.index.values[p_id]]['track_id'].values, IX_tgt_items.index.values, assume_unique=True)
-    ratings[IX_tgt_items.loc[tgt_in_playlist]['track_id'].values] = 0 #line to change
+    ratings[IX_tgt_items.loc[tgt_in_playlist].values] = 0 #line to change
 
     if(np.count_nonzero(ratings) < 5): sys.exit('Not enough similarity')
 

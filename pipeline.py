@@ -37,8 +37,12 @@ print('Recommending completed!')
 #print('Evaluation completed!')
 
 run_data = {'recommender_type' : rec.__class__.__name__,
-            'fit_parameters' : fit_dict,
-            'recommend_parameters' : recommend_dict,
+            'fit_parameters' : {'attributes' : fit_dict['attributes'],
+                                'n_min_attr' : fit_dict['n_min_attr'],
+                                'measure' : fit_dict['measure'],
+                                'shrinkage' : fit_dict['shrinkage'],
+                                'n_el_sim' : fit_dict['n_el_sim']},
+            'recommend_parameters' : {'normalize' : recommend_dict['normalize']}
             'evaluation_result' : 0}
 
 with open('runs_data.json', 'w') as fp:
