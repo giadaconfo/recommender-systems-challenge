@@ -197,9 +197,10 @@ def create_Smatrix(ICM, n_el=20, measure='dot',shrinkage=0, IX_tgt_items=None, I
         sim = getattr(SimMeasures, measure)(ICM[:,i], rec_ICM, shrinkage)
         if (IX_tgt_items is None and IX_items is None):
             sim[i] = 0
-        elif (IX_tgt_items is not None and IX_items is not None and IX_items.index.values[i] in IX_tgt_items.index.values):
-            sim[IX_tgt_items.loc[IX_items.index.values[i]]] = 0
-            print('Diagonal to 0')
+        #NOT WORKING; YET TO DISCOVER WHY
+        #elif (IX_tgt_items is not None and IX_items is not None and IX_items.index.values[i] in IX_tgt_items.index.values):
+            #sim[IX_tgt_items.loc[IX_items.index.values[i]]] = 0
+            #print('Diagonal to 0 at iteration #' + str(i))
 
         sort = np.argsort(sim)[-n_el:].astype(np.int32)
         data = np.append(data, sim[sort])
