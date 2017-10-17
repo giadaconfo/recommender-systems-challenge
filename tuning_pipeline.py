@@ -3,51 +3,25 @@ import pandas as pd
 import recsys as rs
 import json
 import notipy
-import random
 import TopSimilarRecommender as TSR
 import os.path
 os.chdir('/Users/LucaButera/git/rschallenge')
-random.seed(2517)
 
-train = pd.read_csv('Data/train_final.csv','\t')
+dataset = pd.read_csv('Data/train_final.csv','\t')
 tr_info = pd.read_csv('Data/tracks_final.csv','\t')
-tgt_pl = pd.read_csv('Data/target_playlists.csv','\t')
-tgt_tr = pd.read_csv('Data/target_tracks.csv','\t')
 
-n_track_counts = train['playlist_id'].value_counts()
-big_target_playlist = n_track_counts[n_track_counts >= 10].index.values
-
-test_pl = pd.DataFrame({"playlist_id": list(map(lambda x: random.choice(big_target_playlist), range(100)))})
-
-tracks_in_test_pl = pd.merge(train, test_pl, how='inner', on='playlist_id')
-tracks_removed= pd.DataFrame(columns=['playlist_id', 'track_id'], dtype='int32')
-indexes_to_remove= np.array([], dtype='int32')
-for i in tracks_in_test_pl['playlist_id'].unique():
-    #randomly selects 5 elements from playlist i and save indexes
-    tmp = (tracks_in_test_pl.where(tracks_in_test_pl['playlist_id']==i).dropna().sample(5)).index
-    #insert the items selected in tracks_removed dataFrame
-    tracks_removed= tracks_removed.append(tracks_in_test_pl.take(tmp)).astype('int64')
-    #remove tracks from the original dataframe
-    indexes_to_remove=np.append(indexes_to_remove, values=tmp)
-
-tracks_in_train= pd.DataFrame(tracks_in_test_pl)
-tracks_in_train.drop(indexes_to_remove, inplace=True)
-
-tgt_test_tracks= pd.DataFrame(tracks_in_test_pl['track_id'])
-print(tgt_test_tracks.shape)
-tgt_test_tracks = pd.DataFrame.drop_duplicates(tgt_test_tracks)
-print(tgt_test_tracks.shape)
+train, test, tgt_tracks, tgt_playlists = plit_train_test(dataset, 10, 20, 5, 2517):
 
 fit_dict = {'tracks_info' : tr_info,
             'attributes' : ['artist_id', 'album', 'tags'],
-            'tgt_tracks' : tgt_test_tracks,
+            'tgt_tracks' : tgt_tracks,
             'n_min_attr' : 2,
             'measure' : 'dot',
             'shrinkage' : 0,
             'n_el_sim' : 20}
 
-recommend_dict = {'tgt_playlists' : test_pl,
-                  'train_playlists_tracks_pairs' : tracks_in_test_pl,
+recommend_dict = {'tgt_playlists' : tgt_playlists,
+                  'train_playlists_tracks_pairs' : train,
                   'normalize' : False}
 
 rec = TSR.TopSimilarRecommender()
@@ -59,7 +33,7 @@ recommendetions = rec.recommend(**recommend_dict)
 notipy.notify('Recommending completed!')
 print('Recommending completed!')
 
-map_eval = rs.evaluate(recommendetions, tracks_removed, 'MAP')
+map_eval = rs.evaluate(recommendetions, test, 'MAP')
 notipy.notify('Evaluation completed!')
 print('Evaluation completed!')
 

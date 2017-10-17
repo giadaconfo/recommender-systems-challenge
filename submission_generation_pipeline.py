@@ -14,7 +14,7 @@ tgt_pl = pd.read_csv('Data/target_playlists.csv','\t')
 tgt_tr = pd.read_csv('Data/target_tracks.csv','\t')
 
 fit_dict = {'tracks_info' : tr_info,
-            'attributes' : ['artist_id', 'album', 'tags'],
+            'attributes' : ['artist_id', 'album', 'tags', 'playcount', 'duration'],
             'tgt_tracks' : tgt_tr,
             'n_min_attr' : 2,
             'measure' : 'dot',
@@ -34,6 +34,6 @@ recommendetions = rec.recommend(**recommend_dict)
 notipy.notify('Recommending completed!')
 print('Recommending completed!')
 
-recommendetions.to_csv('Submissions/top_similar_submission_' + str(2517), index=False)
+recommendetions.to_csv('Submissions/top_similar_submission_' + str(1234) + '.csv', index=False)
 notipy.notify('Results saved as csv!')
 print('Results saved as csv!')

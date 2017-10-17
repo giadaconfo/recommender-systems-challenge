@@ -6,6 +6,7 @@ import math
 import collections
 import sys
 import ctypes
+import random
 
 def fix_tracks_format(df):
     data = df.copy()
@@ -239,7 +240,7 @@ def calculate_AP(row, test):
 
     AP = 0
     rel_sum = 0
-    n_rel_items = min(test[test['playlist_id'] == int(p_id)].shape[0],5)
+    n_rel_items = min(test[test['playlist_id'] == p_id].shape[0],5)
     for i in range(recs.size):
         rel = 1 if ((test['playlist_id'] == int(p_id)) & (test['track_id'] == recs[i])).any() else 0
         rel_sum += rel
@@ -249,4 +250,27 @@ def calculate_AP(row, test):
     if row.name % 1000 == 0:
         print('Calculated AP for playlist #' + str(row.name))
 
-    return ctypes.c_float(AP)
+    return AP
+
+def split_train_test(track_playlist_couples, min_tracks_in_playlist=10, test_percentage=20, n_tracks_toremove=5, seed=2517):
+    random.seed(seed)
+
+    n_track_counts = track_playlist_couples['playlist_id'].value_counts()
+    big_target_playlist = n_track_counts[n_track_counts >= min_tracks_in_playlist].index.values
+
+    n_playlists_in_test = int((big_target_playlist.size*test_percentage)/100)
+    tgt_playlists = pd.DataFrame({"playlist_id": random.sample(set(big_target_playlist), n_playlists_in_test)})
+
+    tracks_in_test_pl = track_playlist_couples[track_playlist_couples['playlist_id'].isin(tgt_playlists['playlist_id'])]
+
+    test = pd.DataFrame(columns=['playlist_id', 'track_id'], dtype='int32')
+    indexes_to_remove = np.array([], dtype='int32')
+    for i in tracks_in_test_pl['playlist_id'].unique():
+        tmp = (tracks_in_test_pl.where(tracks_in_test_pl['playlist_id'] == i).dropna().sample(n_tracks_toremove)).index
+        test = test.append(tracks_in_test_pl.loc[tmp,:]).astype('int64')
+        indexes_to_remove = np.append(indexes_to_remove, values=tmp)
+
+    train = tracks_in_test_pl.drop(indexes_to_remove)
+    tgt_tracks = test.drop_duplicates('track_id')
+
+    return train, test, tgt_tracks, tgt_playlists

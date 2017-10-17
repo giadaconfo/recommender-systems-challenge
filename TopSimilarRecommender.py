@@ -32,7 +32,7 @@ class TopSimilarRecommender:
         TopSimilarRecommender.ICM = rs.create_ICM(tr_info_fixed, TopSimilarRecommender.IX_items, TopSimilarRecommender.IX_attr, attributes)
         print('ICM built')
         if n_min_attr >= 2:
-            rs.prune_useless(ICM, n_min_attr)
+            rs.prune_useless(TopSimilarRecommender.ICM, n_min_attr)
         if TopSimilarRecommender.IX_tgt_items is not None:
             TopSimilarRecommender.S = rs.create_Smatrix(TopSimilarRecommender.ICM, n_el_sim, measure, shrinkage, TopSimilarRecommender.IX_tgt_items, TopSimilarRecommender.IX_items)
         else:
@@ -64,4 +64,4 @@ class TopSimilarRecommender:
             if (p % 1000 == 0):
                 print('Recommended ' + str(p) + ' users over ' + str(TopSimilarRecommender.IX_tgt_playlists.values.shape[0]))
 
-        return pd.DataFrame(data=np.array([tgt_playlists['playlist_id'], recommendetions]).transpose() , index=range(TopSimilarRecommender.IX_tgt_playlists.values.shape[0]), columns=['playlist_id', 'track_ids'])
+        return pd.DataFrame({'playlist_id' : TopSimilarRecommender.IX_tgt_playlists.index.values, 'track_ids' : recommendetions})
