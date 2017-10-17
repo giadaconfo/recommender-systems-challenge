@@ -7,20 +7,22 @@ import random
 import TopSimilarRecommender as TSR
 import os.path
 os.chdir('/Users/LucaButera/git/rschallenge')
+random.seed(2517)
 
 train = pd.read_csv('Data/train_final.csv','\t')
 tr_info = pd.read_csv('Data/tracks_final.csv','\t')
 tgt_pl = pd.read_csv('Data/target_playlists.csv','\t')
 tgt_tr = pd.read_csv('Data/target_tracks.csv','\t')
 
-big_target_playlist = [i for i in np.unique(train['playlist_id'].values) if train[train['playlist_id'] == i].shape[0] >= 10]
+n_track_counts = train['playlist_id'].value_counts()
+big_target_playlist = n_track_counts[n_track_counts >= 10].index.values
 
 test_pl = pd.DataFrame({"playlist_id": list(map(lambda x: random.choice(big_target_playlist), range(100)))})
 
 tracks_in_test_pl = pd.merge(train, test_pl, how='inner', on='playlist_id')
 tracks_removed= pd.DataFrame(columns=['playlist_id', 'track_id'], dtype='int32')
 indexes_to_remove= np.array([], dtype='int32')
-for i in np.unique(tracks_in_test_pl['playlist_id'].values):
+for i in tracks_in_test_pl['playlist_id'].unique():
     #randomly selects 5 elements from playlist i and save indexes
     tmp = (tracks_in_test_pl.where(tracks_in_test_pl['playlist_id']==i).dropna().sample(5)).index
     #insert the items selected in tracks_removed dataFrame

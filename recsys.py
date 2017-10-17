@@ -52,19 +52,19 @@ def fix_durations(val):
 
 def create_sparse_indexes(tracks_info=None, playlists=None, tracks_reduced=None, attr_list=None):
     if tracks_info is not None:
-        items = np.unique(tracks_info['track_id'].values)
+        items = tracks_info['track_id'].dropna().unique()
         IX_items = pd.Series(range(items.size), index=items)
     else:
         IX_items=None
 
     if playlists is not None:
-        rec_pl = np.unique(playlists['playlist_id'].values)
+        rec_pl = playlists['playlist_id'].dropna().unique()
         IX_tgt_playlists = pd.Series(range(rec_pl.size), index=rec_pl)
     else:
         IX_tgt_playlists=None
 
     if tracks_reduced is not None:
-        rec_tr = np.unique(tracks_reduced['track_id'].values)
+        rec_tr = tracks_reduced['track_id'].dropna().unique()
         IX_tgt_items = pd.Series(range(rec_tr.size), index=rec_tr)
     else:
         IX_tgt_items=None
@@ -72,9 +72,10 @@ def create_sparse_indexes(tracks_info=None, playlists=None, tracks_reduced=None,
     if attr_list is not None:
         attributes = [[] for i in range(len(attr_list))]
         for i, a in zip(range(len([i for i in attr_list if not i == 'tags'])), [i for i in attr_list if not i == 'tags']):
-            attributes[i] = np.unique(tracks_info[a].values)
+            attributes[i] = tracks_info[a].dropna().unique()
         if 'tags' in attr_list:
             attributes[-1] = np.unique(tracks_info[['tag' + str(j) for j in range(1,6)]].values)
+            attributes[-1] = attributes[-1][~np.isnan(attributes[-1])]
             attr_list.append(attr_list.pop(attr_list.index('tags')))
         bound = 0
         indexes = [[] for i in range(len(attr_list))]
@@ -88,10 +89,10 @@ def create_sparse_indexes(tracks_info=None, playlists=None, tracks_reduced=None,
 
     return IX_items, IX_tgt_items, IX_tgt_playlists, Indexes
 
-def create_ICM(tracks_info, IX_items, Indexes, n_min_attr=0):
+def create_ICM(tracks_info, IX_items, Indexes, attr_list):
     rows = np.array([], dtype='int32')
     columns = np.array([], dtype='int32')
-    attributes = Indexes._fields if 'tags' not in Indexes._fields else [i for i in Indexes._fields if not i == 'tags'] + ['tag' + str(i) for i in range(1,6)]
+    attributes = attr_list if 'tags' not in attr_list else [i for i in attr_list if not i == 'tags'] + ['tag' + str(i) for i in range(1,6)]
     for label in attributes:
         ix_label = label if 'tag' not in label else 'tags'
         tmp_c, tmp_r = get_sparse_index_val(tracks_info[['track_id',label]], IX_items, getattr(Indexes,ix_label))
@@ -103,10 +104,7 @@ def create_ICM(tracks_info, IX_items, Indexes, n_min_attr=0):
     for attr in Indexes:
         att_size += attr.index.values.size
 
-    ICM = sps.coo_matrix((data,(rows,columns)), shape=(att_size, IX_items.index.values.size))
-
-    if n_min_attr >= 2:
-        prune_useless(ICM, n_min_attr)
+    ICM = sps.coo_matrix((data,(rows,columns)), shape=(att_size, IX_items.shape[0]))
 
     return ICM
 
@@ -216,7 +214,8 @@ def top5_outside_playlist(ratings, p_id, train_playlists_tracks_pairs, IX_tgt_pl
     tgt_in_playlist = np.intersect1d(train_playlists_tracks_pairs[train_playlists_tracks_pairs['playlist_id'] == IX_tgt_playlists.index.values[p_id]]['track_id'].values, IX_tgt_items.index.values, assume_unique=True)
     ratings[IX_tgt_items.loc[tgt_in_playlist].values] = 0 #line to change
 
-    if(np.count_nonzero(ratings) < 5): sys.exit('Not enough similarity')
+    #REMEMBER TO UNCOMMENT
+    #if(np.count_nonzero(ratings) < 5): sys.exit('Not enough similarity')
 
     top5_ind = np.flip(np.argsort(ratings)[-5:], axis=0) #Contains the index of the recommended songs
     return IX_tgt_items.index.values[top5_ind]
@@ -240,9 +239,9 @@ def calculate_AP(row, test):
 
     AP = 0
     rel_sum = 0
-    n_rel_items = min(test[test['playlist_id'] == p_id].shape[0],5)
+    n_rel_items = min(test[test['playlist_id'] == int(p_id)].shape[0],5)
     for i in range(recs.size):
-        rel = 1 if ((test['playlist_id'] == p_id) & (test['track_id'] == recs[i])).any() else 0
+        rel = 1 if ((test['playlist_id'] == int(p_id)) & (test['track_id'] == recs[i])).any() else 0
         rel_sum += rel
         P = rel_sum/(i+1)
         AP += (P * rel)/n_rel_items
