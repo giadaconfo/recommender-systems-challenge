@@ -18,6 +18,7 @@ fit_dict = {'tracks_info' : tr_info,
             'attributes_to_prune' : ['tags'],
             'tgt_tracks' : tgt_tr,
             'n_min_attr' : 2,
+            'idf' : True,
             'measure' : 'dot',
             'shrinkage' : 0,
             'n_el_sim' : 20}
