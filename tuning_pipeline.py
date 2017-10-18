@@ -47,7 +47,7 @@ run_data = {'recommender_type' : rec.__class__.__name__,
             'recommend_parameters' : {'normalize' : recommend_dict['normalize']},
             'evaluation_result' : map_eval}
 
-with open('runs_data.json', 'w') as fp:
+with open('runs_data.json', 'a') as fp:
     json.dump(run_data, fp, indent=2)
     fp.write('\n')
 notipy.notify('Run data saved!')
