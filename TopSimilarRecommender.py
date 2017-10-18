@@ -24,15 +24,16 @@ class TopSimilarRecommender:
         The dataset containing the tracks to recommend
         The minimum number of attribute occurences to keep it in the ICM
         The number of similarity elements to keep in the S matrix calculation'''
-    def fit(aux, *, tracks_info=None, attributes=['artist_id', 'album', 'tags'], tgt_tracks=None, n_min_attr=2, measure='dot', shrinkage=0, n_el_sim=20):
+    def fit(aux, *, tracks_info=None, attributes=['artist_id', 'album', 'tags'], attributes_to_prune=None, tgt_tracks=None, n_min_attr=2, measure='dot', shrinkage=0, n_el_sim=20):
         tr_info_fixed = rs.fix_tracks_format(tracks_info)
         print('Fixed dataset')
         TopSimilarRecommender.IX_items, TopSimilarRecommender.IX_tgt_items, _, TopSimilarRecommender.IX_attr = rs.create_sparse_indexes(tracks_info=tr_info_fixed, tracks_reduced=tgt_tracks, attr_list=attributes)
         print('Calculated Indices')
+        if not attributes_to_prune is None and n_min_attr >= 2:
+            tr_info_fixed = delete_low_frequency_attributes(tr_info_fixed, attributes_to_prune, n_min_attr)
+            print('Eliminated low frequency attributes!')
         TopSimilarRecommender.ICM = rs.create_ICM(tr_info_fixed, TopSimilarRecommender.IX_items, TopSimilarRecommender.IX_attr, attributes)
         print('ICM built')
-        if n_min_attr >= 2:
-            rs.prune_useless(TopSimilarRecommender.ICM, n_min_attr)
         if TopSimilarRecommender.IX_tgt_items is not None:
             TopSimilarRecommender.S = rs.create_Smatrix(TopSimilarRecommender.ICM, n_el_sim, measure, shrinkage, TopSimilarRecommender.IX_tgt_items, TopSimilarRecommender.IX_items)
         else:

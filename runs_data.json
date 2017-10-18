@@ -1,1 +1,1 @@
-{"recommender_type": "TopSimilarRecommender", "fit_parameters": {"attributes": ["artist_id", "album", "playcount", "tags"], "n_min_attr": 5, "measure": "dot", "shrinkage": 0, "n_el_sim": 20}, "recommend_parameters": {"normalize": false}, "evaluation_result": 0.061107088989441616}
+{"ciao": "ciaociao"}

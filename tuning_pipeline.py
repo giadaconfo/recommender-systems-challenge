@@ -14,6 +14,7 @@ train, test, tgt_tracks, tgt_playlists = plit_train_test(dataset, 10, 20, 5, 251
 
 fit_dict = {'tracks_info' : tr_info,
             'attributes' : ['artist_id', 'album', 'tags'],
+            'attributes_to_prune' : ['tags'],
             'tgt_tracks' : tgt_tracks,
             'n_min_attr' : 2,
             'measure' : 'dot',
@@ -47,6 +48,7 @@ run_data = {'recommender_type' : rec.__class__.__name__,
             'evaluation_result' : map_eval}
 
 with open('runs_data.json', 'w') as fp:
-    json.dump(run_data, fp)
+    json.dump(run_data, fp, indent=2)
+    fp.write('\n')
 notipy.notify('Run data saved!')
 print('Run data saved!')

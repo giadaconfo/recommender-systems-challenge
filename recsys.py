@@ -109,11 +109,11 @@ def create_ICM(tracks_info, IX_items, Indexes, attr_list):
 
     return ICM
 
-
 def get_sparse_index_val(couples, prim_index, sec_index):
     aux = couples.dropna(axis=0, how='any')
     return prim_index.loc[aux.iloc[:,0].values].values, sec_index.loc[aux.iloc[:,1].values].values
 
+#deprecated
 def prune_useless(mat, n_min_attr):
     mat = mat.tocsr()
     to_del = []
@@ -130,6 +130,7 @@ def prune_useless(mat, n_min_attr):
     print('Number of attributes after pruning is: ' + str(mat.shape[0]))
     return
 
+#deprecated
 def delete_row_csr(mat, i):
     if not isinstance(mat, sps.csr_matrix):
         raise ValueError("works only for CSR format -- use .tocsr() first")
@@ -144,6 +145,20 @@ def delete_row_csr(mat, i):
     mat.indptr = mat.indptr[:-1]
     mat._shape = (mat._shape[0]-1, mat._shape[1])
     return
+
+def delete_low_frequency_attributes(dataset, attributes, n_min):
+    for a in attributes:
+        if a == 'tags':
+            n_appearance = pd.Series(dataset[['tag' + str(i) for i in range(1,6)]].values.ravel('F')).value_counts()
+        else:
+            n_appearance = dataset[a].value_counts()
+        to_del = n_appearance[n_appearance < n_min].index.values
+        if a == 'tags':
+            for j in ['tag' + str(i) for i in range(1,6)]:
+                dataset[j] = dataset[j].apply(lambda x: float('NaN') if x in to_del else x)
+        else:
+            dataset[a] = dataset[a].apply(lambda x: float('NaN') if x in to_del else x)
+    return dataset
 
 #Requires the sparse index for target playlists, for items and the dataset with playlists/tracks couples
 def create_tgt_URM(IX_tgt_playlists, IX_items, playlist_to_track):
@@ -167,7 +182,7 @@ def calculate_dot(ICM_i, rec_ICM, shrinkage=0):
 def calculate_cos(ICM_i, rec_ICM, shrinkage=0):
     dot = ICM_i.T.dot(rec_ICM).toarray().ravel()
     i_module = math.sqrt(np.sum([i**2 for i in ICM_i.toarray().ravel()]))
-    ICM_modules = np.sqrt(rec_ICM.copy().power(2).sum(axis=1).toarray().ravel())
+    ICM_modules = np.asarray(np.sqrt(rec_ICM.copy().power(2).sum(axis=0))).ravel()
     cos = np.divide(dot, ICM_modules * i_module + shrinkage)
     return cos
 

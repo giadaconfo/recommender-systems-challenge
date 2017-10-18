@@ -15,6 +15,7 @@ tgt_tr = pd.read_csv('Data/target_tracks.csv','\t')
 
 fit_dict = {'tracks_info' : tr_info,
             'attributes' : ['artist_id', 'album', 'tags', 'playcount', 'duration'],
+            'attributes_to_prune' : ['tags'],
             'tgt_tracks' : tgt_tr,
             'n_min_attr' : 2,
             'measure' : 'dot',
