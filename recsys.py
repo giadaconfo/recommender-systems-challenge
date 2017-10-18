@@ -211,10 +211,11 @@ def create_Smatrix(ICM, n_el=20, measure='dot',shrinkage=0, IX_tgt_items=None, I
         sim = getattr(SimMeasures, measure)(ICM[:,i], rec_ICM, shrinkage)
         if (IX_tgt_items is None and IX_items is None):
             sim[i] = 0
-        #NOT WORKING; YET TO DISCOVER WHY
-        #elif (IX_tgt_items is not None and IX_items is not None and IX_items.index.values[i] in IX_tgt_items.index.values):
-            #sim[IX_tgt_items.loc[IX_items.index.values[i]]] = 0
-            #print('Diagonal to 0 at iteration #' + str(i))
+        #SEEMS TO WORK, KEEP AN EYE ON IT!
+        elif (IX_tgt_items is not None and IX_items is not None and IX_items.index.values[i] in IX_tgt_items.index.values):
+            sim[IX_tgt_items.loc[IX_items.index.values[i]]] = 0
+            c += 1
+            print('Diagonal to 0 at iteration #' + str(i))
 
         sort = np.argsort(sim)[-n_el:].astype(np.int32)
         data = np.append(data, sim[sort])
@@ -231,7 +232,7 @@ def top5_outside_playlist(ratings, p_id, train_playlists_tracks_pairs, IX_tgt_pl
     ratings[IX_tgt_items.loc[tgt_in_playlist].values] = 0 #line to change
 
     #REMEMBER TO UNCOMMENT
-    #if(np.count_nonzero(ratings) < 5): sys.exit('Not enough similarity')
+    if(np.count_nonzero(ratings) < 5): sys.exit('Not enough similarity')
 
     top5_ind = np.flip(np.argsort(ratings)[-5:], axis=0) #Contains the index of the recommended songs
     return IX_tgt_items.index.values[top5_ind]
