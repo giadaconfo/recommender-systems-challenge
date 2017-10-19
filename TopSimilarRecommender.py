@@ -30,7 +30,7 @@ class TopSimilarRecommender:
         TopSimilarRecommender.IX_items, TopSimilarRecommender.IX_tgt_items, _, TopSimilarRecommender.IX_attr = rs.create_sparse_indexes(tracks_info=tr_info_fixed, tracks_reduced=tgt_tracks, attr_list=attributes)
         print('Calculated Indices')
         if not attributes_to_prune is None and n_min_attr >= 2:
-            tr_info_fixed = delete_low_frequency_attributes(tr_info_fixed, attributes_to_prune, n_min_attr)
+            tr_info_fixed = rs.delete_low_frequency_attributes(tr_info_fixed, attributes_to_prune, n_min_attr)
             print('Eliminated low frequency attributes!')
         TopSimilarRecommender.ICM = rs.create_ICM(tr_info_fixed, TopSimilarRecommender.IX_items, TopSimilarRecommender.IX_attr, attributes)
         print('ICM built')

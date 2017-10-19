@@ -113,6 +113,7 @@ def get_sparse_index_val(couples, prim_index, sec_index):
     aux = couples.dropna(axis=0, how='any')
     return prim_index.loc[aux.iloc[:,0].values].values, sec_index.loc[aux.iloc[:,1].values].values
 
+'''
 #deprecated
 def prune_useless(mat, n_min_attr):
     mat = mat.tocsr()
@@ -145,6 +146,7 @@ def delete_row_csr(mat, i):
     mat.indptr = mat.indptr[:-1]
     mat._shape = (mat._shape[0]-1, mat._shape[1])
     return
+'''
 
 def delete_low_frequency_attributes(dataset, attributes, n_min):
     for a in attributes:
@@ -214,7 +216,7 @@ def create_Smatrix(ICM, n_el=20, measure='dot',shrinkage=0, IX_tgt_items=None, I
         #SEEMS TO WORK, KEEP AN EYE ON IT!
         elif (IX_tgt_items is not None and IX_items is not None and IX_items.index.values[i] in IX_tgt_items.index.values):
             sim[IX_tgt_items.loc[IX_items.index.values[i]]] = 0
-            print('Diagonal to 0 at iteration #' + str(i))
+            #print('Diagonal to 0 at iteration #' + str(i))
 
         sort = np.argsort(sim)[-n_el:].astype(np.int32)
         data = np.append(data, sim[sort])
@@ -235,23 +237,24 @@ def top5_outside_playlist(ratings, p_id, train_playlists_tracks_pairs, IX_tgt_pl
 
     top5_ind = np.flip(np.argsort(ratings)[-5:], axis=0) #Contains the index of the recommended songs
 
-    '''
-    if ratings[ratings > ratings[top5_ind[-1]]].shape[0] > 5:
-        competition_treshold = ratings[top5_ind[-1]]
-        competitors_mask = ratings == competition_treshold
-        sorted_ix = break_equalities_by_popularity(ratings, competitors_mask)
-        n_open_positions = ratings[top5_ind][ratings[top5_ind] == competition_treshold].shape[0]
-        top5_ind = np.append(top5_ind[:5 - n_open_positions], sorted_ix[:n_open_positions])
-    '''
-    
+    if ratings[ratings >= ratings[top5_ind[-1]]].shape[0] > 5:
+        top5_ind = break_equalities_by_popularity(ratings, top5_ind, train_playlists_tracks_pairs, IX_tgt_items)
+
     return IX_tgt_items.index.values[top5_ind]
 
-def break_equalities_by_popularity(ratings, mask):
-    pass
+def break_equalities_by_popularity(ratings, top5_ind, train, IX_tgt_items):
+    competition_treshold = ratings[top5_ind[-1]]
+    competitors_mask = ratings == competition_treshold
+    n_open_positions = ratings[top5_ind][ratings[top5_ind] == competition_treshold].shape[0]
+    competitors = IX_tgt_items[competitors_mask].index.values
+    winners = train['track_id'][train['track_id'].isin(competitors)].value_counts().index.values[:n_open_positions]
+    return np.append(top5_ind[:5 - n_open_positions], IX_tgt_items.loc[winners])
+
 
 def sub_format(l):
     res = " ".join(np.array_str(l).split())[1:-1]
     return res
+
 '''Requires:
     The dataset generated from the recommender system
     The test set

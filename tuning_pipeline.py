@@ -10,16 +10,16 @@ os.chdir('/Users/LucaButera/git/rschallenge')
 dataset = pd.read_csv('Data/train_final.csv','\t')
 tr_info = pd.read_csv('Data/tracks_final.csv','\t')
 
-train, test, tgt_tracks, tgt_playlists = plit_train_test(dataset, 10, 20, 5, 2517):
+train, test, tgt_tracks, tgt_playlists = rs.split_train_test(dataset, 10, 20, 5, 2517)
 
 fit_dict = {'tracks_info' : tr_info,
-            'attributes' : ['artist_id', 'album', 'tags'],
+            'attributes' : ['artist_id', 'album', 'tags', 'playcount'],
             'attributes_to_prune' : ['tags'],
             'tgt_tracks' : tgt_tracks,
-            'n_min_attr' : 2,
+            'n_min_attr' : 55,
             'idf' : True,
-            'measure' : 'dot',
-            'shrinkage' : 0,
+            'measure' : 'cos',
+            'shrinkage' : 10,
             'n_el_sim' : 20}
 
 recommend_dict = {'tgt_playlists' : tgt_playlists,
@@ -41,7 +41,9 @@ print('Evaluation completed!')
 
 run_data = {'recommender_type' : rec.__class__.__name__,
             'fit_parameters' : {'attributes' : fit_dict['attributes'],
+                                'attributes_to_prune' : fit_dict['attributes_to_prune'],
                                 'n_min_attr' : fit_dict['n_min_attr'],
+                                'idf' : fit_dict['idf'],
                                 'measure' : fit_dict['measure'],
                                 'shrinkage' : fit_dict['shrinkage'],
                                 'n_el_sim' : fit_dict['n_el_sim']},
