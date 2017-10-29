@@ -2,11 +2,13 @@ import numpy as np
 import pandas as pd
 import os.path
 from scipy import sparse as sps
+from scipy.sparse import linalg as la
 import math
 import collections
 import sys
 import ctypes
 import random
+from tqdm import tqdm
 
 def fix_tracks_format(df):
     data = df.copy()
@@ -315,3 +317,40 @@ def ICM_idf_regularization(ICM):
     ICM = ICM.tocsr()
     idf = compute_idf(ICM)
     return ICM.multiply(np.broadcast_to(idf,shape=(ICM.shape)))
+
+def implicit_weighted_ALS(URM, lambda_val=0.1, alpha=40, iterations=10, rank_size=20, seed=2517):
+    conf_matrix = (alpha * URM)
+    n_user = conf_matrix.shape[0]
+    n_item = conf_matrix.shape[1]
+    rand_init_state = np.random.RandomState(seed)
+
+    X = sps.csr_matrix(rand_init_state.normal(size=(n_user, rank_size)))
+    Y = sps.csr_matrix(rand_init_state.normal(size=(n_item, rank_size)))
+
+    X_diag = sps.eye(n_user)
+    Y_diag = sps.eye(n_item)
+    lambda_diag = lambda_val * sps.eye(rank_size)
+
+    for i_step in tqdm(range(iterations)):
+        yTy = Y.T.dot(Y)
+        xTx = X.T.dot(X)
+
+        for u in range(n_user):
+            u_row = conf_matrix[u,:].toarray()
+            preference_v = u_row.copy()
+            preference_v[preference_v != 0] = 1
+            CuI = sps.diags(u_row, [0])
+            yTCuIY = Y.T.dot(CuI).dot(Y)
+            yTCupu = Y.T.dot(CuI + Y_diag).dot(preference_v.T)
+            X[u] = la.spsolve(yTy + yTCuIY + lambda_diag, yTCupu)
+
+        for i in range(n_item):
+            i_row = conf_matrix[:,i].T.toarray()
+            preference_v = i_row.copy()
+            preference_v[preference_v != 0] = 1
+            CiI = sps.diags(i_row, [0])
+            xTCiIX = X.T.dot(CiI).dot(X)
+            xTCipi = X.T.dot(CiI + X_diag).dot(preference_v.T)
+            Y[i] = la.spsolve(xTx + xTCiIX + lambda_diag, xTCipi)
+
+    return X, Y.T

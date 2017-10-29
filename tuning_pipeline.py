@@ -3,6 +3,7 @@ import pandas as pd
 import recsys as rs
 import json
 import notipy
+import time
 import TopSimilarRecommender as TSR
 import os.path
 os.chdir('/Users/LucaButera/git/rschallenge')
@@ -13,31 +14,38 @@ tr_info = pd.read_csv('Data/tracks_final.csv','\t')
 train, test, tgt_tracks, tgt_playlists = rs.split_train_test(dataset, 10, 20, 5, 2517)
 
 fit_dict = {'tracks_info' : tr_info,
-            'attributes' : ['artist_id', 'album', 'tags', 'playcount'],
+            'attributes' : ['artist_id', 'album', 'tags'],
             'attributes_to_prune' : ['tags'],
             'tgt_tracks' : tgt_tracks,
-            'n_min_attr' : 55,
+            'n_min_attr' : 90,
             'idf' : True,
-            'measure' : 'cos',
-            'shrinkage' : 10,
-            'n_el_sim' : 20}
+            'measure' : 'dot',
+            'shrinkage' : 0,
+            'n_el_sim' : 15}
 
 recommend_dict = {'tgt_playlists' : tgt_playlists,
                   'train_playlists_tracks_pairs' : train,
                   'normalize' : False}
 
 rec = TSR.TopSimilarRecommender()
+
+start = time.time()
 rec.fit(**fit_dict)
-notipy.notify('Model fitted!')
-print('Model fitted!')
+end = time.time()
+notipy.notify('Model fitted in ' + str(int(end - start)) + ' seconds!')
+print('Model fitted in ' + str(int(end - start)) + ' seconds!')
 
+start = time.time()
 recommendetions = rec.recommend(**recommend_dict)
-notipy.notify('Recommending completed!')
-print('Recommending completed!')
+end = time.time()
+notipy.notify('Recommending completed in ' + str(int(end - start)) + ' seconds!')
+print('Recommending completed in ' + str(int(end - start)) + ' seconds!')
 
+start = time.time()
 map_eval = rs.evaluate(recommendetions, test, 'MAP')
-notipy.notify('Evaluation completed!')
-print('Evaluation completed!')
+end = time.time()
+notipy.notify('Evaluation completed! MAP5 score is: ' + str(map_eval))
+print('Evaluation completed! MAP5 score is: ' + str(map_eval))
 
 run_data = {'recommender_type' : rec.__class__.__name__,
             'fit_parameters' : {'attributes' : fit_dict['attributes'],
@@ -51,7 +59,7 @@ run_data = {'recommender_type' : rec.__class__.__name__,
             'evaluation_result' : map_eval}
 
 with open('runs_data.json', 'a') as fp:
-    json.dump(run_data, fp, indent=2)
+    json.dump(run_data, fp, indent=4)
     fp.write('\n')
 notipy.notify('Run data saved!')
 print('Run data saved!')
