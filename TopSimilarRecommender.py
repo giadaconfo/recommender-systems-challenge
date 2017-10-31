@@ -3,8 +3,8 @@ import pandas as pd
 import os.path
 from scipy import sparse as sps
 import recsys as rs
-os.chdir('/Users/LucaButera/git/rschallenge')
-#os.chdir('/home/giada/github/RecSys')
+#os.chdir('/Users/LucaButera/git/rschallenge')
+os.chdir('/home/giada/github/RecSys')
 
 class TopSimilarRecommender:
 
@@ -43,11 +43,21 @@ class TopSimilarRecommender:
             TopSimilarRecommender.S = rs.create_Smatrix(TopSimilarRecommender.ICM, n_el_sim, measure, shrinkage)
         print('Similarity built')
 
+    def fit_without_matrix_builder(aux, *, tracks_info=None, attributes=['artist_id', 'album', 'tags'], attributes_to_prune=None, tgt_tracks=None, n_min_attr=2, idf=False, measure='dot', shrinkage=0, n_el_sim=20):
+        tr_info_fixed = rs.fix_tracks_format(tracks_info)
+        print('Fixed dataset')
+        TopSimilarRecommender.IX_items, TopSimilarRecommender.IX_tgt_items, _, TopSimilarRecommender.IX_attr = rs.create_sparse_indexes(tracks_info=tr_info_fixed, tracks_reduced=tgt_tracks, attr_list=attributes)
+        print('Calculated Indices')
+        if not attributes_to_prune is None and n_min_attr >= 2:
+            tr_info_fixed = rs.delete_low_frequency_attributes(tr_info_fixed, attributes_to_prune, n_min_attr)
+            print('Eliminated low frequency attributes!')
+
     '''Requires:
         The dataset containing the playlist for which we want to make a recommendation
         The train split of the train_final dataset to use for training
         Put normalize to True to divide similarities by the item vector lenght,
         useful with many similarities and cosin measure'''
+
     def recommend(aux, *, tgt_playlists=None, train_playlists_tracks_pairs=None, normalize=False):
         _, _, TopSimilarRecommender.IX_tgt_playlists, _ = rs.create_sparse_indexes(playlists=tgt_playlists)
         URM = rs.create_tgt_URM(TopSimilarRecommender.IX_tgt_playlists, TopSimilarRecommender.IX_items, train_playlists_tracks_pairs)
