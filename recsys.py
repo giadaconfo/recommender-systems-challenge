@@ -168,13 +168,10 @@ def delete_low_frequency_attributes(dataset, attributes, n_min):
 def create_tgt_URM(IX_tgt_playlists, IX_items, playlist_to_track):
     rows = np.array([], dtype='int32')
     columns = np.array([], dtype='int32')
-    for p in IX_tgt_playlists.index.values:
+    for p in tqdm(IX_tgt_playlists.index.values):
         tracks = playlist_to_track[playlist_to_track['playlist_id'] == p]['track_id'].values.astype('int32')
         rows = np.append(rows, np.array([IX_tgt_playlists.loc[p]]*tracks.size,dtype='int32'))
         columns = np.append(columns, IX_items.loc[tracks])
-        if (IX_tgt_playlists.loc[p] % 1000 == 0):
-            print('Calculated ' + str(IX_tgt_playlists.loc[p]) + ' users ratings over ' + str(IX_tgt_playlists.index.shape[0]))
-
     data = np.array([1]*len(rows), dtype='int32')
 
     URM = sps.coo_matrix((data,(rows,columns)), shape=(IX_tgt_playlists.index.shape[0], IX_items.shape[0]))
@@ -211,7 +208,7 @@ def create_Smatrix(ICM, n_el=20, measure='dot',shrinkage=0, IX_tgt_items=None, I
         rec_ICM = ICM
         h = l
 
-    for i in range(l):
+    for i in tqdm(range(l)):
         sim = getattr(SimMeasures, measure)(ICM[:,i], rec_ICM, shrinkage)
         if (IX_tgt_items is None and IX_items is None):
             sim[i] = 0
@@ -224,8 +221,6 @@ def create_Smatrix(ICM, n_el=20, measure='dot',shrinkage=0, IX_tgt_items=None, I
         data = np.append(data, sim[sort])
         rows = np.append(rows, np.array([i]*n_el,dtype='int32'))
         columns = np.append(columns, sort)
-        if (i % 1000 == 0):
-            print('Computed ' + str(i) + ' similarities over ' + str(l) + ' with ' + measure + ' measure and ' + str(shrinkage) + ' shrinkage.')
 
     S = sps.coo_matrix((data,(rows,columns)), shape=(l, h))
     return S
@@ -274,14 +269,11 @@ def calculate_AP(row, test):
     AP = 0
     rel_sum = 0
     n_rel_items = min(test[test['playlist_id'] == p_id].shape[0],5)
-    for i in range(recs.size):
+    for i in tqdm(range(recs.size)):
         rel = 1 if ((test['playlist_id'] == int(p_id)) & (test['track_id'] == recs[i])).any() else 0
         rel_sum += rel
         P = rel_sum/(i+1)
         AP += (P * rel)/n_rel_items
-
-    if row.name % 1000 == 0:
-        print('Calculated AP for playlist #' + str(row.name))
 
     return AP
 
