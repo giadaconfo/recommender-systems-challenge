@@ -3,8 +3,9 @@ import pandas as pd
 import os.path
 from scipy import sparse as sps
 import recsys as rs
-#os.chdir('/Users/LucaButera/git/rschallenge')
-os.chdir('/home/giada/github/RecSys')
+from tqdm import tqdm
+os.chdir('/Users/LucaButera/git/rschallenge')
+#os.chdir('/home/giada/github/RecSys')
 
 class TopSimilarRecommender:
 
@@ -57,13 +58,11 @@ class TopSimilarRecommender:
             norm_dividend = np.squeeze(np.asarray(TopSimilarRecommender.S.tocsc().sum(axis=0)))
             norm_dividend[norm_dividend == 0] = 1
 
-        for p in TopSimilarRecommender.IX_tgt_playlists.values:
+        for p in tqdm(TopSimilarRecommender.IX_tgt_playlists.values):
             if normalize:
                 avg_sims = np.divide(URM[p,:].dot(TopSimilarRecommender.S).toarray(), norm_dividend).ravel()
             avg_sims = URM[p,:].dot(TopSimilarRecommender.S).toarray().ravel()
             top = rs.top5_outside_playlist(avg_sims, p, train_playlists_tracks_pairs, TopSimilarRecommender.IX_tgt_playlists, TopSimilarRecommender.IX_tgt_items, sim_check, secondary_sorting)
             recommendetions = np.append(recommendetions, rs.sub_format(top))
-            if (p % 1000 == 0):
-                print('Recommended ' + str(p) + ' users over ' + str(TopSimilarRecommender.IX_tgt_playlists.values.shape[0]))
 
         return pd.DataFrame({'playlist_id' : TopSimilarRecommender.IX_tgt_playlists.index.values, 'track_ids' : recommendetions})

@@ -546,3 +546,31 @@
   },
   "evaluation_result": 0.03353393665158365
 }
+{
+  "recommender_1": "TopSimilarRecommender",
+  "recommender_2": "ItemBasedRecommender",
+  "fit_parameters_1": {
+    "attributes": [
+      "artist_id",
+      "album",
+      "playcount",
+      "tags"
+    ],
+    "attributes_to_prune": [
+      "tags"
+    ],
+    "n_min_attr": 90,
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 0,
+    "n_el_sim": 20
+  },
+  "fit_parameters_2": {
+    "idf": false,
+    "measure": "dot",
+    "shrinkage": 0,
+    "n_el_sim": 20
+  },
+  "alpha_ensemble": 0.7,
+  "evaluation_result": 0.003938159879336349
+}

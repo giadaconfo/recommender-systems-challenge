@@ -247,7 +247,11 @@ def sort_equal_by_popularity(ratings, treshold, train, IX_tgt_items):
     most_popular = train['track_id'][train['track_id'].isin(competitors)].value_counts()
     most_rated = np.flip(np.argsort(ratings), axis=0)
     most_rated = most_rated[ratings[most_rated] >= treshold]
-    combined = np.array(zip(competitors, ratings[IX_tgt_items.loc[competitors]], most_popular.loc[competitors]), dtype=[('item', 'i4'), ('rate', 'f4'), ('pop', 'i4')])
+    combined_type = np.dtype([('item', 'i4'), ('rate', 'f4'), ('pop', 'i4')])
+    combined = np.empty(competitors.shape[0], combined_type)
+    combined['item'] = competitors
+    combined['rate'] = ratings[IX_tgt_items.loc[competitors]]
+    combined['pop'] = most_popular.loc[competitors]
     ordered_ix = np.flip(np.argsort(combined, order=['rate', 'pop'])[-5:], axis=0)
     return combined['item'][ordered_ix]
 
@@ -273,7 +277,7 @@ def calculate_AP(row, test):
     AP = 0
     rel_sum = 0
     n_rel_items = min(test[test['playlist_id'] == p_id].shape[0],5)
-    for i in tqdm(range(recs.size)):
+    for i in range(recs.size):
         rel = 1 if ((test['playlist_id'] == int(p_id)) & (test['track_id'] == recs[i])).any() else 0
         rel_sum += rel
         P = rel_sum/(i+1)
@@ -357,15 +361,30 @@ def merge_similarities(S1, S2, alpha):
     return (alpha*S1)+((1-alpha)*S2)
 
 def normalize_matrix(M):
-    M_zero_mean = remove_mean(M.tocsr())
-    M_scaled = prp.scale(M_zero_mean.tocsc(), axis=1, with_mean=False)
+    M = remove_mean(M.tocsr())
+    M_scaled = prp.scale(M.tocsc(), axis=0, with_mean=False)
     return M_scaled
 
 def remove_mean(M):
-    tot = np.array(M.sum(axis=1).suqeeze())[0]
+    tot = np.array(M.sum(axis=1).squeeze())[0]
     cts = np.diff(M.indptr)
     m = tot/cts
     d = sps.diags(m, 0)
     b = M.copy()
     b.data = np.ones_like(b.data)
-    return M - (b * d)
+    M_mean = b*d
+    return M - (M_mean)
+
+def generic_similarity_based_recommend(S, tracks, tgt_tracks, tgt_playlists, train_data, sim_check=True, secondary_sorting=True):
+    IX_items, IX_tgt_items, IX_tgt_playlists, _ = create_sparse_indexes(tracks_info=tracks, tracks_reduced=tgt_tracks, playlists=tgt_playlists)
+    URM = create_tgt_URM(IX_tgt_playlists, IX_items, train_data)
+    URM = URM.tocsr()
+    print('URM built')
+
+    recommendetions = np.array([])
+    for p in tqdm(IX_tgt_playlists.values):
+        avg_sims = URM[p,:].dot(S).toarray().ravel()
+        top = top5_outside_playlist(avg_sims, p, train_data, IX_tgt_playlists, IX_tgt_items, sim_check, secondary_sorting)
+        recommendetions = np.append(recommendetions, sub_format(top))
+
+    return pd.DataFrame({'playlist_id' : IX_tgt_playlists.index.values, 'track_ids' : recommendetions})

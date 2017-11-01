@@ -3,6 +3,7 @@ import pandas as pd
 import os.path
 from scipy import sparse as sps
 import recsys as rs
+from tqdm import tqdm
 os.chdir('/Users/LucaButera/git/rschallenge')
 
 class ItemBasedRecommender:
@@ -43,10 +44,9 @@ class ItemBasedRecommender:
         print('URM built')
 
         recommendetions = np.array([])
-        for p in IX_tgt_playlists.values:
+        for p in tqdm(IX_tgt_playlists.values):
             avg_sims = URM[p,:].dot(ItemBasedRecommender.S).toarray().ravel()
             top = rs.top5_outside_playlist(avg_sims, p, train_data, IX_tgt_playlists, ItemBasedRecommender.IX_tgt_items, sim_check, secondary_sorting)
             recommendetions = np.append(recommendetions, rs.sub_format(top))
-            if (p % 1000 == 0):
-                print('Recommended ' + str(p) + ' users over ' + str(IX_tgt_playlists.values.shape[0]))
+
         return pd.DataFrame({'playlist_id' : IX_tgt_playlists.index.values, 'track_ids' : recommendetions})
