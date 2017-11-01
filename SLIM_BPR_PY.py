@@ -214,7 +214,7 @@ class SLIM_BPR_Python():
 
         return user_id_list, pos_item_id_list, neg_item_id_list
 
-    def similarityMatrixTopK(item_weights, forceSparseOutput = True, k=100, verbose = False, inplace=True):
+    def similarityMatrixTopK(self, item_weights, forceSparseOutput = True, k=100, verbose = False, inplace=True):
         """
         The function selects the TopK most similar elements, column-wise
 

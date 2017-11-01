@@ -58,7 +58,7 @@ class TopSimilarRecommender:
         Put normalize to True to divide similarities by the item vector lenght,
         useful with many similarities and cosin measure'''
 
-    def recommend(aux, *, tgt_playlists=None, train_playlists_tracks_pairs=None, normalize=False):
+    def recommend(aux, *, tgt_playlists=None, train_playlists_tracks_pairs=None, normalize=False, sim_check=True, secondary_sorting=True):
         _, _, TopSimilarRecommender.IX_tgt_playlists, _ = rs.create_sparse_indexes(playlists=tgt_playlists)
         URM = rs.create_tgt_URM(TopSimilarRecommender.IX_tgt_playlists, TopSimilarRecommender.IX_items, train_playlists_tracks_pairs)
         URM = URM.tocsr()
@@ -73,7 +73,7 @@ class TopSimilarRecommender:
             if normalize:
                 avg_sims = np.divide(URM[p,:].dot(TopSimilarRecommender.S).toarray(), norm_dividend).ravel()
             avg_sims = URM[p,:].dot(TopSimilarRecommender.S).toarray().ravel()
-            top = rs.top5_outside_playlist(avg_sims, p, train_playlists_tracks_pairs, TopSimilarRecommender.IX_tgt_playlists, TopSimilarRecommender.IX_tgt_items)
+            top = rs.top5_outside_playlist(avg_sims, p, train_playlists_tracks_pairs, TopSimilarRecommender.IX_tgt_playlists, TopSimilarRecommender.IX_tgt_items, sim_check, secondary_sorting)
             recommendetions = np.append(recommendetions, rs.sub_format(top))
             if (p % 1000 == 0):
                 print('Recommended ' + str(p) + ' users over ' + str(TopSimilarRecommender.IX_tgt_playlists.values.shape[0]))

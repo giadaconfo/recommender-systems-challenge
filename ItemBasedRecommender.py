@@ -37,7 +37,7 @@ class ItemBasedRecommender:
             ItemBasedRecommender.S = rs.create_Smatrix(model_URM, n_el_sim, measure, shrinkage)
         print('Similarity built')
 
-    def recommend(aux, *, tgt_playlists=None, train_data=None):
+    def recommend(aux, *, tgt_playlists=None, train_data=None, sim_check=True, secondary_sorting=True):
         _, _, IX_tgt_playlists, _ = rs.create_sparse_indexes(playlists=tgt_playlists)
         URM = rs.create_tgt_URM(IX_tgt_playlists, ItemBasedRecommender.IX_items, train_data)
         URM = URM.tocsr()
@@ -46,7 +46,7 @@ class ItemBasedRecommender:
         recommendetions = np.array([])
         for p in IX_tgt_playlists.values:
             avg_sims = URM[p,:].dot(ItemBasedRecommender.S).toarray().ravel()
-            top = rs.top5_outside_playlist(avg_sims, p, train_data, IX_tgt_playlists, ItemBasedRecommender.IX_tgt_items)
+            top = rs.top5_outside_playlist(avg_sims, p, train_data, IX_tgt_playlists, ItemBasedRecommender.IX_tgt_items, sim_check, secondary_sorting)
             recommendetions = np.append(recommendetions, rs.sub_format(top))
             if (p % 1000 == 0):
                 print('Recommended ' + str(p) + ' users over ' + str(IX_tgt_playlists.values.shape[0]))

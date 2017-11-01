@@ -9,6 +9,7 @@ import sys
 import ctypes
 import random
 from tqdm import tqdm
+from sklearn import preprocessing as prp
 
 def fix_tracks_format(df):
     data = df.copy()
@@ -225,27 +226,30 @@ def create_Smatrix(ICM, n_el=20, measure='dot',shrinkage=0, IX_tgt_items=None, I
     S = sps.coo_matrix((data,(rows,columns)), shape=(l, h))
     return S
 
-def top5_outside_playlist(ratings, p_id, train_playlists_tracks_pairs, IX_tgt_playlists, IX_tgt_items):
+def top5_outside_playlist(ratings, p_id, train_playlists_tracks_pairs, IX_tgt_playlists, IX_tgt_items, sim_check, secondary_sorting):
     tgt_in_playlist = np.intersect1d(train_playlists_tracks_pairs[train_playlists_tracks_pairs['playlist_id'] == IX_tgt_playlists.index.values[p_id]]['track_id'].values, IX_tgt_items.index.values, assume_unique=True)
     ratings[IX_tgt_items.loc[tgt_in_playlist].values] = 0 #line to change
 
-    #REMEMBER TO UNCOMMENT
-    if(np.count_nonzero(ratings) < 5): sys.exit('Not enough similarity')
+    if((np.count_nonzero(ratings) < 5) and sim_check):
+        sys.exit('Not enough similarity')
 
-    top5_ind = np.flip(np.argsort(ratings)[-5:], axis=0) #Contains the index of the recommended songs
+    if(secondary_sorting):
+        treshold = np.argsort(ratings)[-5:-4]
+        top5_id = sort_equal_by_popularity(ratings, treshold, train_playlists_tracks_pairs, IX_tgt_items)
+    else:
+        top5_ind = np.flip(np.argsort(ratings)[-5:])
+        top5_id = IX_tgt_items.index.values[top5_ind]
 
-    if ratings[ratings >= ratings[top5_ind[-1]]].shape[0] > 5:
-        top5_ind = break_equalities_by_popularity(ratings, top5_ind, train_playlists_tracks_pairs, IX_tgt_items)
+    return top5_id
 
-    return IX_tgt_items.index.values[top5_ind]
-
-def break_equalities_by_popularity(ratings, top5_ind, train, IX_tgt_items):
-    competition_treshold = ratings[top5_ind[-1]]
-    competitors_mask = ratings == competition_treshold
-    n_open_positions = ratings[top5_ind][ratings[top5_ind] == competition_treshold].shape[0]
-    competitors = IX_tgt_items[competitors_mask].index.values
-    winners = train['track_id'][train['track_id'].isin(competitors)].value_counts().index.values[:n_open_positions]
-    return np.append(top5_ind[:5 - n_open_positions], IX_tgt_items.loc[winners])
+def sort_equal_by_popularity(ratings, treshold, train, IX_tgt_items):
+    competitors = IX_tgt_items[ratings >= treshold].index.values
+    most_popular = train['track_id'][train['track_id'].isin(competitors)].value_counts()
+    most_rated = np.flip(np.argsort(ratings), axis=0)
+    most_rated = most_rated[ratings[most_rated] >= treshold]
+    combined = np.array(zip(competitors, ratings[IX_tgt_items.loc[competitors]], most_popular.loc[competitors]), dtype=[('item', 'i4'), ('rate', 'f4'), ('pop', 'i4')])
+    ordered_ix = np.flip(np.argsort(combined, order=['rate', 'pop'])[-5:], axis=0)
+    return combined['item'][ordered_ix]
 
 
 def sub_format(l):
@@ -346,3 +350,22 @@ def implicit_weighted_ALS(URM, lambda_val=0.1, alpha=40, iterations=10, rank_siz
             Y[i] = la.spsolve(xTx + xTCiIX + lambda_diag, xTCipi)
 
     return X, Y.T
+
+def merge_similarities(S1, S2, alpha):
+    S1 = normalize_matrix(S1).tocsr()
+    S2 = normalize_matrix(S2).tocsr()
+    return (alpha*S1)+((1-alpha)*S2)
+
+def normalize_matrix(M):
+    M_zero_mean = remove_mean(M.tocsr())
+    M_scaled = prp.scale(M_zero_mean.tocsc(), axis=1, with_mean=False)
+    return M_scaled
+
+def remove_mean(M):
+    tot = np.array(M.sum(axis=1).suqeeze())[0]
+    cts = np.diff(M.indptr)
+    m = tot/cts
+    d = sps.diags(m, 0)
+    b = M.copy()
+    b.data = np.ones_like(b.data)
+    return M - (b * d)
