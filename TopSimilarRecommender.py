@@ -15,50 +15,38 @@ class TopSimilarRecommender:
     IX_tgt_playlists = None
     IX_attr = None
 
-    def __init__(self):
-        pass
+    def __init__(self, attributes=['artist_id', 'album', 'tags'], attributes_to_prune=None, n_min_attr=2, idf=False, measure='dot', shrinkage=0, n_el_sim=20):
+        self.attributes = attributes
+        self.attributes_to_prune = attributes_to_prune
+        self.n_min_attr = n_min_attr
+        self.idf = idf
+        self.measure = measure
+        self.shrinkage = shrinkage
+        self.n_el_sim = n_el_sim
+        return
 
-    '''Requires:
-        The dataset containing the tracks informations
-        A list of attributes corresponding to column names in the dataset
-        The dataset containing the tracks to recommend
-        The minimum number of attribute occurences to keep it in the ICM
-        The number of similarity elements to keep in the S matrix calculation'''
-    def fit(aux, *, tracks_info=None, attributes=['artist_id', 'album', 'tags'], attributes_to_prune=None, tgt_tracks=None, n_min_attr=2, idf=False, measure='dot', shrinkage=0, n_el_sim=20):
+
+    def fit(self, tracks_info, tgt_tracks=None):
         tr_info_fixed = rs.fix_tracks_format(tracks_info)
         print('Fixed dataset')
-        TopSimilarRecommender.IX_items, TopSimilarRecommender.IX_tgt_items, _, TopSimilarRecommender.IX_attr = rs.create_sparse_indexes(tracks_info=tr_info_fixed, tracks_reduced=tgt_tracks, attr_list=attributes)
+        TopSimilarRecommender.IX_items, TopSimilarRecommender.IX_tgt_items, _, TopSimilarRecommender.IX_attr = rs.create_sparse_indexes(tracks_info=tr_info_fixed, tracks_reduced=tgt_tracks, attr_list=self.attributes)
         print('Calculated Indices')
-        if not attributes_to_prune is None and n_min_attr >= 2:
-            tr_info_fixed = rs.delete_low_frequency_attributes(tr_info_fixed, attributes_to_prune, n_min_attr)
+        if not self.attributes_to_prune is None and self.n_min_attr >= 2:
+            tr_info_fixed = rs.delete_low_frequency_attributes(tr_info_fixed, self.attributes_to_prune, self.n_min_attr)
             print('Eliminated low frequency attributes!')
-        TopSimilarRecommender.ICM = rs.create_ICM(tr_info_fixed, TopSimilarRecommender.IX_items, TopSimilarRecommender.IX_attr, attributes)
+        TopSimilarRecommender.ICM = rs.create_ICM(tr_info_fixed, TopSimilarRecommender.IX_items, TopSimilarRecommender.IX_attr, self.attributes)
         print('ICM built')
-        if idf:
+        if self.idf:
             TopSimilarRecommender.ICM = rs.ICM_idf_regularization(TopSimilarRecommender.ICM)
             print('ICM regularized with IDF!')
         if TopSimilarRecommender.IX_tgt_items is not None:
-            TopSimilarRecommender.S = rs.create_Smatrix(TopSimilarRecommender.ICM, n_el_sim, measure, shrinkage, TopSimilarRecommender.IX_tgt_items, TopSimilarRecommender.IX_items)
+            TopSimilarRecommender.S = rs.create_Smatrix(TopSimilarRecommender.ICM, self.n_el_sim, self.measure, self.shrinkage, TopSimilarRecommender.IX_tgt_items, TopSimilarRecommender.IX_items)
         else:
-            TopSimilarRecommender.S = rs.create_Smatrix(TopSimilarRecommender.ICM, n_el_sim, measure, shrinkage)
+            TopSimilarRecommender.S = rs.create_Smatrix(TopSimilarRecommender.ICM, self.n_el_sim, self.measure, self.shrinkage)
         print('Similarity built')
 
-    def fit_without_matrix_builder(aux, *, tracks_info=None, attributes=['artist_id', 'album', 'tags'], attributes_to_prune=None, tgt_tracks=None, n_min_attr=2, idf=False, measure='dot', shrinkage=0, n_el_sim=20):
-        tr_info_fixed = rs.fix_tracks_format(tracks_info)
-        print('Fixed dataset')
-        TopSimilarRecommender.IX_items, TopSimilarRecommender.IX_tgt_items, _, TopSimilarRecommender.IX_attr = rs.create_sparse_indexes(tracks_info=tr_info_fixed, tracks_reduced=tgt_tracks, attr_list=attributes)
-        print('Calculated Indices')
-        if not attributes_to_prune is None and n_min_attr >= 2:
-            tr_info_fixed = rs.delete_low_frequency_attributes(tr_info_fixed, attributes_to_prune, n_min_attr)
-            print('Eliminated low frequency attributes!')
 
-    '''Requires:
-        The dataset containing the playlist for which we want to make a recommendation
-        The train split of the train_final dataset to use for training
-        Put normalize to True to divide similarities by the item vector lenght,
-        useful with many similarities and cosin measure'''
-
-    def recommend(aux, *, tgt_playlists=None, train_playlists_tracks_pairs=None, normalize=False, sim_check=True, secondary_sorting=True):
+    def recommend(self, tgt_playlists, train_playlists_tracks_pairs, normalize=False, sim_check=True, secondary_sorting=True):
         _, _, TopSimilarRecommender.IX_tgt_playlists, _ = rs.create_sparse_indexes(playlists=tgt_playlists)
         URM = rs.create_tgt_URM(TopSimilarRecommender.IX_tgt_playlists, TopSimilarRecommender.IX_items, train_playlists_tracks_pairs)
         URM = URM.tocsr()
