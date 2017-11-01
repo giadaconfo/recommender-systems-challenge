@@ -574,3 +574,115 @@
   "alpha_ensemble": 0.7,
   "evaluation_result": 0.003938159879336349
 }
+{
+  "recommender_1": "TopSimilarRecommender",
+  "recommender_2": "ItemBasedRecommender",
+  "fit_parameters_1": {
+    "attributes": [
+      "artist_id",
+      "album",
+      "playcount",
+      "tags"
+    ],
+    "attributes_to_prune": [
+      "tags"
+    ],
+    "n_min_attr": 90,
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 0,
+    "n_el_sim": 15
+  },
+  "fit_parameters_2": {
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 0,
+    "n_el_sim": 15
+  },
+  "alpha_ensemble": 0.8,
+  "evaluation_result": 0.0015316742081447963
+}
+{
+  "recommender_1": "TopSimilarRecommender",
+  "recommender_2": "ItemBasedRecommender",
+  "fit_parameters_1": {
+    "attributes": [
+      "artist_id",
+      "album",
+      "playcount",
+      "tags"
+    ],
+    "attributes_to_prune": [
+      "tags"
+    ],
+    "n_min_attr": 90,
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 0,
+    "n_el_sim": 15
+  },
+  "fit_parameters_2": {
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 0,
+    "n_el_sim": 15
+  },
+  "alpha_ensemble": 0.25,
+  "evaluation_result": 0.0013099547511312222
+}
+{
+  "recommender_1": "TopSimilarRecommender",
+  "recommender_2": "ItemBasedRecommender",
+  "fit_parameters_1": {
+    "attributes": [
+      "artist_id",
+      "album",
+      "playcount",
+      "tags"
+    ],
+    "attributes_to_prune": [
+      "tags"
+    ],
+    "n_min_attr": 90,
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 0,
+    "n_el_sim": 15
+  },
+  "fit_parameters_2": {
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 0,
+    "n_el_sim": 15
+  },
+  "alpha_ensemble": 0.3,
+  "evaluation_result": 0.0016184012066365007
+}
+{
+  "recommender_1": "TopSimilarRecommender",
+  "recommender_2": "ItemBasedRecommender",
+  "fit_parameters_1": {
+    "attributes": [
+      "artist_id",
+      "album",
+      "playcount",
+      "tags"
+    ],
+    "attributes_to_prune": [
+      "tags"
+    ],
+    "n_min_attr": 90,
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 0,
+    "n_el_sim": 15
+  },
+  "fit_parameters_2": {
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 0,
+    "n_el_sim": 15
+  },
+  "alpha_ensemble": 0.3,
+  "evaluation_result": 0.06962292609351427
+}

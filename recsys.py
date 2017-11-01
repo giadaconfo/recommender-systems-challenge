@@ -225,7 +225,7 @@ def create_Smatrix(ICM, n_el=20, measure='dot',shrinkage=0, IX_tgt_items=None, I
 
     S = sps.coo_matrix((data,(rows,columns)), shape=(l, h))
     return S
-
+'''TO BE FIXED
 def top5_outside_playlist(ratings, p_id, train_playlists_tracks_pairs, IX_tgt_playlists, IX_tgt_items, sim_check, secondary_sorting):
     tgt_in_playlist = np.intersect1d(train_playlists_tracks_pairs[train_playlists_tracks_pairs['playlist_id'] == IX_tgt_playlists.index.values[p_id]]['track_id'].values, IX_tgt_items.index.values, assume_unique=True)
     ratings[IX_tgt_items.loc[tgt_in_playlist].values] = 0 #line to change
@@ -237,7 +237,7 @@ def top5_outside_playlist(ratings, p_id, train_playlists_tracks_pairs, IX_tgt_pl
         treshold = np.argsort(ratings)[-5:-4]
         top5_id = sort_equal_by_popularity(ratings, treshold, train_playlists_tracks_pairs, IX_tgt_items)
     else:
-        top5_ind = np.flip(np.argsort(ratings)[-5:])
+        top5_ind = np.flip(np.argsort(ratings)[-5:], axis=0)
         top5_id = IX_tgt_items.index.values[top5_ind]
 
     return top5_id
@@ -254,7 +254,29 @@ def sort_equal_by_popularity(ratings, treshold, train, IX_tgt_items):
     combined['pop'] = most_popular.loc[competitors]
     ordered_ix = np.flip(np.argsort(combined, order=['rate', 'pop'])[-5:], axis=0)
     return combined['item'][ordered_ix]
+'''
 
+def top5_outside_playlist(ratings, p_id, train_playlists_tracks_pairs, IX_tgt_playlists, IX_tgt_items, sim_check, secondary_sorting):
+    tgt_in_playlist = np.intersect1d(train_playlists_tracks_pairs[train_playlists_tracks_pairs['playlist_id'] == IX_tgt_playlists.index.values[p_id]]['track_id'].values, IX_tgt_items.index.values, assume_unique=True)
+    ratings[IX_tgt_items.loc[tgt_in_playlist].values] = 0 #line to change
+
+    #REMEMBER TO UNCOMMENT
+    if(np.count_nonzero(ratings) < 5): sys.exit('Not enough similarity')
+
+    top5_ind = np.flip(np.argsort(ratings)[-5:], axis=0) #Contains the index of the recommended songs
+
+    if ratings[ratings >= ratings[top5_ind[-1]]].shape[0] > 5:
+        top5_ind = break_equalities_by_popularity(ratings, top5_ind, train_playlists_tracks_pairs, IX_tgt_items)
+
+    return IX_tgt_items.index.values[top5_ind]
+
+def break_equalities_by_popularity(ratings, top5_ind, train, IX_tgt_items):
+    competition_treshold = ratings[top5_ind[-1]]
+    competitors_mask = ratings == competition_treshold
+    n_open_positions = ratings[top5_ind][ratings[top5_ind] == competition_treshold].shape[0]
+    competitors = IX_tgt_items[competitors_mask].index.values
+    winners = train['track_id'][train['track_id'].isin(competitors)].value_counts().index.values[:n_open_positions]
+    return np.append(top5_ind[:5 - n_open_positions], IX_tgt_items.loc[winners])
 
 def sub_format(l):
     res = " ".join(np.array_str(l).split())[1:-1]
