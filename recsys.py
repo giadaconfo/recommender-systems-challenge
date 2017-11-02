@@ -383,19 +383,18 @@ def merge_similarities(S1, S2, alpha):
     return (alpha*S1)+((1-alpha)*S2)
 
 def normalize_matrix(M):
-    M = remove_mean(M.tocsr())
-    M_scaled = prp.scale(M.tocsc(), axis=0, with_mean=False)
+    M_zero_mean = remove_mean(M.tocsr())
+    M_scaled = prp.scale(M_zero_mean.T.tocsc(), axis=0, with_mean=False).T
     return M_scaled
 
 def remove_mean(M):
     tot = np.array(M.sum(axis=1).squeeze())[0]
+    tot[tot == 0] = 1
     cts = np.diff(M.indptr)
-    m = tot/cts
-    d = sps.diags(m, 0)
-    b = M.copy()
-    b.data = np.ones_like(b.data)
-    M_mean = b*d
-    return M - (M_mean)
+    inverse_m = cts/tot
+    m_len = inverse_m.shape[0]
+    m = sps.spdiags(inverse_m, 0, m_len, m_len)
+    return m*M
 
 def generic_similarity_based_recommend(S, tracks, tgt_tracks, tgt_playlists, train_data, sim_check=True, secondary_sorting=True):
     IX_items, IX_tgt_items, IX_tgt_playlists, _ = create_sparse_indexes(tracks_info=tracks, tracks_reduced=tgt_tracks, playlists=tgt_playlists)
