@@ -4,8 +4,8 @@ import os.path
 from scipy import sparse as sps
 import recsys as rs
 from tqdm import tqdm
-#os.chdir('/Users/LucaButera/git/rschallenge')
-os.chdir('/home/giada/github/RecSys')
+os.chdir('/Users/LucaButera/git/rschallenge')
+#os.chdir('/home/giada/github/RecSys')
 
 class UserBasedRecommender:
 
@@ -35,7 +35,7 @@ class UserBasedRecommender:
             model_URM = rs.ICM_idf_regularization(model_URM)
             print('Model URM regularized with IDF!')
         print(model_URM.T.shape[1])
-        UserBasedRecommender.S = rs.create_Smatrix(model_URM.T, self.n_el_sim, self.measure, self.shrinkage)
+        UserBasedRecommender.S = rs.create_Smatrix(model_URM, self.n_el_sim, self.measure, self.shrinkage)
         print('Similarity built')
         print(UserBasedRecommender.S.shape)
 
@@ -48,12 +48,8 @@ class UserBasedRecommender:
         print('URM built')
 
         recommendetions = np.array([])
-        #for p in tqdm(IX_tgt_playlists.values):
-        #den = np.array(ItemBasedRecommender.S.sum(axis=1)).flatten()
-        #print(den)
         for p in IX_tgt_playlists.values:
             avg_sims = URM[p,:].dot(UserBasedRecommender.S).toarray().ravel()
-            #avg_sims = avg_sims/(den+1e-6)
             top = rs.top5_outside_playlist(avg_sims, p, train_data, IX_tgt_playlists, UserBasedRecommender.IX_tgt_items, sim_check, secondary_sorting)
             recommendetions = np.append(recommendetions, rs.sub_format(top))
 
