@@ -178,6 +178,19 @@ def create_tgt_URM(IX_tgt_playlists, IX_items, playlist_to_track):
     URM = sps.coo_matrix((data,(rows,columns)), shape=(IX_tgt_playlists.index.shape[0], IX_items.shape[0]))
     return URM
 
+def create_UBR_URM(IX_playlists, IX_tgt_items, train):
+    rows = np.array([], dtype='int32')
+    columns = np.array([], dtype='int32')
+    for p in tqdm(IX_playlists.index.values):
+        tracks = train[train['playlist_id'] == p]['track_id'].values.astype('int32')
+        tracks = tracks[np.in1d(tracks, IX_tgt_items.index)]
+        rows = np.append(rows, np.array([IX_playlists.loc[p]]*tracks.size,dtype='int32'))
+        columns = np.append(columns, IX_tgt_items.loc[tracks])
+    data = np.array([1]*len(rows), dtype='int32')
+
+    URM = sps.coo_matrix((data,(rows,columns)), shape=(IX_playlists.index.shape[0], IX_tgt_items.shape[0]))
+    return URM
+
 def calculate_dot(ICM_i, rec_ICM, shrinkage=0):
     return ICM_i.T.dot(rec_ICM).toarray().flatten()
 
@@ -267,7 +280,8 @@ def top5_outside_playlist(ratings, p_id, train_playlists_tracks_pairs, IX_tgt_pl
     ratings[IX_tgt_items.loc[tgt_in_playlist].values] = 0 #line to change
 
     #REMEMBER TO UNCOMMENT
-    if(np.count_nonzero(ratings) < 5): sys.exit('Not enough similarity')
+    if((np.count_nonzero(ratings) < 5) and sim_check):
+        sys.exit('Not enough similarity')
 
     top5_ind = np.flip(np.argsort(ratings)[-5:], axis=0) #Contains the index of the recommended songs
 

@@ -49,3 +49,33 @@
   "alpha_ensemble": 0.6,
   "evaluation_result": 0.09117194570135764
 }
+{
+  "recommender_type": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 0,
+    "n_el_sim": 20
+  },
+  "evaluation_result": 0.025173453996983446
+}
+{
+  "recommender_type": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": false,
+    "measure": "prob",
+    "shrinkage": 10,
+    "n_el_sim": 20
+  },
+  "evaluation_result": 0.025767722473604857
+}
+{
+  "recommender_type": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": false,
+    "measure": "cos",
+    "shrinkage": 10,
+    "n_el_sim": 20
+  },
+  "evaluation_result": 0.027436651583710434
+}

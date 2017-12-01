@@ -13,8 +13,10 @@ class UserBasedRecommender:
     IX_users =None
     IX_items = None
     IX_tgt_items = None
+    IX_playlists = None
+    IX_tgt_playlists = None
 
-    def __init__(self, idf=False, measure='dot', shrinkage=0, n_el_sim=20):
+    def __init__(self, idf=False, measure='cos', shrinkage=10, n_el_sim=20):
         self.idf = idf
         self.measure = measure
         self.shrinkage = shrinkage
@@ -22,35 +24,33 @@ class UserBasedRecommender:
         return
 
 
-    def fit(self, track_ids, train_data, tgt_tracks=None):
-        UserBasedRecommender.IX_items, UserBasedRecommender.IX_tgt_items, playlists_ix, _ = rs.create_sparse_indexes(tracks_info=track_ids, playlists=train_data, tracks_reduced=tgt_tracks)
+    def fit(self, track_ids, train_data, tgt_playlists):
+        UserBasedRecommender.IX_items, _, UserBasedRecommender.IX_playlists, _ = rs.create_sparse_indexes(tracks_info=track_ids, playlists=train_data)
+        _, _, UserBasedRecommender.IX_tgt_playlists, _ = rs.create_sparse_indexes(playlists=tgt_playlists)
         print('Calculated Indices')
 
-        model_URM = rs.create_tgt_URM(playlists_ix, UserBasedRecommender.IX_items, train_data)
+        model_URM = rs.create_tgt_URM(UserBasedRecommender.IX_playlists, UserBasedRecommender.IX_items, train_data)
         model_URM = model_URM.tocsr()
-        print(model_URM.shape)
         print('Model URM built')
 
         if self.idf:
             model_URM = rs.ICM_idf_regularization(model_URM)
             print('Model URM regularized with IDF!')
-        print(model_URM.T.shape[1])
-        UserBasedRecommender.S = rs.create_Smatrix(model_URM, self.n_el_sim, self.measure, self.shrinkage)
-        print('Similarity built')
-        print(UserBasedRecommender.S.shape)
 
-    def recommend(self, tgt_playlists, train_data, sim_check=True, secondary_sorting=True):
-        print(UserBasedRecommender.IX_items)
-        _, _, IX_tgt_playlists, _ = rs.create_sparse_indexes(playlists=tgt_playlists)
-        URM = rs.create_tgt_URM(IX_tgt_playlists, UserBasedRecommender.IX_items, train_data)
+        UserBasedRecommender.S = rs.create_Smatrix(model_URM.T, self.n_el_sim, self.measure, self.shrinkage, UserBasedRecommender.IX_tgt_playlists, UserBasedRecommender.IX_playlists)
+        print('Similarity built')
+
+    def recommend(self, tgt_items, train_data, sim_check=True, secondary_sorting=True):
+        _, UserBasedRecommender.IX_tgt_items, _, _ = rs.create_sparse_indexes(tracks_reduced=tgt_items)
+        URM = rs.create_UBR_URM(UserBasedRecommender.IX_playlists, UserBasedRecommender.IX_tgt_items, train_data)
         URM = URM.tocsr()
-        print(URM.shape)
         print('URM built')
 
         recommendetions = np.array([])
-        for p in IX_tgt_playlists.values:
-            avg_sims = URM[p,:].dot(UserBasedRecommender.S).toarray().ravel()
-            top = rs.top5_outside_playlist(avg_sims, p, train_data, IX_tgt_playlists, UserBasedRecommender.IX_tgt_items, sim_check, secondary_sorting)
+        UserBasedRecommender.S = UserBasedRecommender.S.T.tocsr()
+        for p in UserBasedRecommender.IX_tgt_playlists.values:
+            avg_sims = UserBasedRecommender.S[p,:].dot(URM).toarray().ravel()
+            top = rs.top5_outside_playlist(avg_sims, p, train_data, UserBasedRecommender.IX_tgt_playlists, UserBasedRecommender.IX_tgt_items, sim_check, secondary_sorting)
             recommendetions = np.append(recommendetions, rs.sub_format(top))
 
-        return pd.DataFrame({'playlist_id' : IX_tgt_playlists.index.values, 'track_ids' : recommendetions})
+        return pd.DataFrame({'playlist_id' : UserBasedRecommender.IX_tgt_playlists.index.values, 'track_ids' : recommendetions})
