@@ -149,3 +149,93 @@
   },
   "evaluation_result": 0.02906636500754151
 }
+{
+  "recommender_type": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": true,
+    "measure": "imp_cos",
+    "shrinkage": 20,
+    "n_el_sim": 50
+  },
+  "evaluation_result": 0.02928808446455507
+}
+{
+  "recommender_type": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": true,
+    "measure": "imp_cos",
+    "shrinkage": 20,
+    "n_el_sim": 45
+  },
+  "evaluation_result": 0.028837104072398194
+}
+{
+  "recommender_1": "TopSimilarRecommender",
+  "recommender_2": "ItemBasedRecommender",
+  "recommender_3": "UserBasedRecommender",
+  "fit_parameters_1": {
+    "attributes": [
+      "artist_id",
+      "album",
+      "playcount"
+    ],
+    "n_min_attr": 90,
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 0,
+    "n_el_sim": 65
+  },
+  "fit_parameters_2": {
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 10,
+    "n_el_sim": 65
+  },
+  "fit_parameters_3": {
+    "idf": true,
+    "measure": "imp_cos",
+    "shrinkage": 20,
+    "n_el_sim": 50
+  },
+  "alpha1_only_ratings": 0.8,
+  "alpha2_only_ratings": 0.15,
+  "beta1_bilevel": 0.6,
+  "beta2_bilevel": 0.6,
+  "evaluation_only_ratings": 0.09247134238310709,
+  "evaluation_bilevel": 0.0973733031674209
+}
+{
+  "recommender_1": "TopSimilarRecommender",
+  "recommender_2": "ItemBasedRecommender",
+  "recommender_3": "UserBasedRecommender",
+  "fit_parameters_1": {
+    "attributes": [
+      "artist_id",
+      "album",
+      "playcount"
+    ],
+    "n_min_attr": 90,
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 0,
+    "n_el_sim": 65
+  },
+  "fit_parameters_2": {
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 10,
+    "n_el_sim": 65
+  },
+  "fit_parameters_3": {
+    "idf": true,
+    "measure": "imp_cos",
+    "shrinkage": 20,
+    "n_el_sim": 50
+  },
+  "alpha1_only_ratings": 0.6,
+  "alpha2_only_ratings": 0.2,
+  "beta1_bilevel": 0.6,
+  "beta2_bilevel": 0.7,
+  "evaluation_only_ratings": 0.08962745098039226,
+  "evaluation_bilevel": 0.0973838612368025
+}
