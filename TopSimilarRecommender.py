@@ -4,8 +4,8 @@ import os.path
 from scipy import sparse as sps
 import recsys as rs
 from tqdm import tqdm
-os.chdir('/Users/LucaButera/git/rschallenge')
-#os.chdir('/home/giada/github/RecSys')
+#os.chdir('/Users/LucaButera/git/rschallenge')
+os.chdir('/home/giada/github/RecSys')
 
 class TopSimilarRecommender:
 
@@ -27,7 +27,7 @@ class TopSimilarRecommender:
         return
 
 
-    def fit(self, tracks_info, tgt_tracks=None):
+    def fit(self, tracks_info, tgt_tracks=None, saved_similarity=None):
         tr_info_fixed = rs.fix_tracks_format(tracks_info)
         print('Fixed dataset')
         TopSimilarRecommender.IX_items, TopSimilarRecommender.IX_tgt_items, _, TopSimilarRecommender.IX_attr = rs.create_sparse_indexes(tracks_info=tr_info_fixed, tracks_reduced=tgt_tracks, attr_list=self.attributes)
@@ -40,11 +40,17 @@ class TopSimilarRecommender:
         if self.idf:
             TopSimilarRecommender.ICM = rs.ICM_idf_regularization(TopSimilarRecommender.ICM)
             print('ICM regularized with IDF!')
-        if TopSimilarRecommender.IX_tgt_items is not None:
-            TopSimilarRecommender.S = rs.create_Smatrix(TopSimilarRecommender.ICM, self.n_el_sim, self.measure, self.shrinkage, TopSimilarRecommender.IX_tgt_items, TopSimilarRecommender.IX_items)
+        if saved_similarity is None:
+            if TopSimilarRecommender.IX_tgt_items is not None:
+                TopSimilarRecommender.S = rs.create_Smatrix(TopSimilarRecommender.ICM, self.n_el_sim, self.measure, self.shrinkage, TopSimilarRecommender.IX_tgt_items, TopSimilarRecommender.IX_items)
+            else:
+                TopSimilarRecommender.S = rs.create_Smatrix(TopSimilarRecommender.ICM, self.n_el_sim, self.measure, self.shrinkage)
+            print('Similarity built')
+            sps.save_npz('BuiltStructures/tsr_sim_65el_idfTrue_artist_album_playcount.npz', TopSimilarRecommender.S)
         else:
-            TopSimilarRecommender.S = rs.create_Smatrix(TopSimilarRecommender.ICM, self.n_el_sim, self.measure, self.shrinkage)
-        print('Similarity built')
+            TopSimilarRecommender.S = sps.load_npz('BuiltStructures/tsr_sim_65el_idfTrue_artist_album_playcount.npz').tocsr()
+
+
 
 
     def recommend(self, tgt_playlists, train_playlists_tracks_pairs, normalize=False, sim_check=True, secondary_sorting=True):
