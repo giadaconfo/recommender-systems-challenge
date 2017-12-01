@@ -207,12 +207,19 @@ def calculate_prob(ICM_i, rec_ICM, shrinkage=0):
     prob = np.divide(dot, ICM_modules + shrinkage)
     return prob
 
+def calculate_implicit_cos(ICM_i, rec_ICM, shrinkage=0):
+    dot = ICM_i.T.dot(rec_ICM).toarray().ravel()
+    i_module = ICM_i.sum(axis=0)[0,0]
+    ICM_modules = np.asarray(rec_ICM.sum(axis=0)).ravel()
+    imp_cos = np.divide(dot, ICM_modules * i_module + shrinkage)
+    return imp_cos
+
 def create_Smatrix(ICM, n_el=20, measure='dot',shrinkage=0, IX_tgt_items=None, IX_items=None):
     if ((IX_tgt_items is not None and IX_items is None) or (IX_tgt_items is None and IX_items is not None)):
         sys.exit('Error: IX_items and IX_tgt_items must be both None or both defined')
 
-    Measures = collections.namedtuple('Measures', ['dot', 'cos', 'prob'])
-    SimMeasures = Measures(*[calculate_dot, calculate_cos, calculate_prob])
+    Measures = collections.namedtuple('Measures', ['dot', 'cos', 'prob', 'imp_cos'])
+    SimMeasures = Measures(*[calculate_dot, calculate_cos, calculate_prob, calculate_implicit_cos])
 
     data = np.array([],dtype='float32')
     rows = np.array([],dtype='int32')

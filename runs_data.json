@@ -79,3 +79,53 @@
   },
   "evaluation_result": 0.027436651583710434
 }
+{
+  "recommender_type": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": false,
+    "measure": "cos",
+    "shrinkage": 20,
+    "n_el_sim": 50
+  },
+  "evaluation_result": 0.0296085972850679
+}
+{
+  "recommender_type": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": false,
+    "measure": "cos",
+    "shrinkage": 20,
+    "n_el_sim": 65
+  },
+  "evaluation_result": 0.02856636500754151
+}
+{
+  "recommender_type": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": false,
+    "measure": "cos",
+    "shrinkage": 15,
+    "n_el_sim": 60
+  },
+  "evaluation_result": 0.02775188536953241
+}
+{
+  "recommender_type": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": false,
+    "measure": "cos",
+    "shrinkage": 25,
+    "n_el_sim": 55
+  },
+  "evaluation_result": 0.027523378582202114
+}
+{
+  "recommender_type": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": false,
+    "measure": "imp_cos",
+    "shrinkage": 20,
+    "n_el_sim": 40
+  },
+  "evaluation_result": 0.02546304675716439
+}
