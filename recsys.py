@@ -209,8 +209,8 @@ def calculate_prob(ICM_i, rec_ICM, shrinkage=0):
 
 def calculate_implicit_cos(ICM_i, rec_ICM, shrinkage=0):
     dot = ICM_i.T.dot(rec_ICM).toarray().ravel()
-    i_module = ICM_i.sum(axis=0)[0,0]
-    ICM_modules = np.asarray(rec_ICM.sum(axis=0)).ravel()
+    i_module = math.sqrt(ICM_i.sum(axis=0)[0,0])
+    ICM_modules = np.asarray(np.sqrt(rec_ICM.sum(axis=0))).ravel()
     imp_cos = np.divide(dot, ICM_modules * i_module + shrinkage)
     return imp_cos
 

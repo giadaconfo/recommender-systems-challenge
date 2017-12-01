@@ -129,3 +129,23 @@
   },
   "evaluation_result": 0.02546304675716439
 }
+{
+  "recommender_type": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": false,
+    "measure": "imp_cos",
+    "shrinkage": 20,
+    "n_el_sim": 50
+  },
+  "evaluation_result": 0.025763951734540002
+}
+{
+  "recommender_type": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": false,
+    "measure": "imp_cos",
+    "shrinkage": 20,
+    "n_el_sim": 50
+  },
+  "evaluation_result": 0.02906636500754151
+}
