@@ -12,6 +12,7 @@ class ItemBasedRecommender:
     S = None
     IX_items = None
     IX_tgt_items = None
+    den = None
 
     def __init__(self, idf=False, measure='dot', shrinkage=0, n_el_sim=20):
         self.idf = idf
@@ -20,8 +21,11 @@ class ItemBasedRecommender:
         self.n_el_sim = n_el_sim
         return
 
-
-    def fit(self, track_ids, train_data, tgt_tracks=None, URM=None, saved_similarity=None):
+    '''
+    @saved_similarity: matrix to import
+    @save_sim: set true to save the matrix that will be created
+    '''
+    def fit(self, track_ids, train_data, tgt_tracks=None, URM=None, saved_similarity=None, save_sim=False):
         ItemBasedRecommender.IX_items, ItemBasedRecommender.IX_tgt_items, playlists_ix, _ = rs.create_sparse_indexes(tracks_info=track_ids, playlists=train_data, tracks_reduced=tgt_tracks)
         print('Calculated Indices')
 
@@ -38,12 +42,13 @@ class ItemBasedRecommender:
             print('Model URM regularized with IDF!')
         if saved_similarity is None:
             if ItemBasedRecommender.IX_tgt_items is not None:
-                ItemBasedRecommender.S = rs.create_Smatrix(model_URM, self.n_el_sim, self.measure, self.shrinkage, ItemBasedRecommender.IX_tgt_items, ItemBasedRecommender.IX_items)
+                ItemBasedRecommender.S, ItemBasedRecommender.den = rs.create_Smatrix(model_URM, self.n_el_sim, self.measure, self.shrinkage, ItemBasedRecommender.IX_tgt_items, ItemBasedRecommender.IX_items)
             else:
                 ItemBasedRecommender.S = rs.create_Smatrix(model_URM, self.n_el_sim, self.measure, self.shrinkage)
                 print('Similarity built')
             print(ItemBasedRecommender.S.shape)
-            sps.save_npz('BuiltStructures/ibr_sim_65el_h10_idfTrue.npz', ItemBasedRecommender.S)
+            if save_sim:
+                sps.save_npz('BuiltStructures/ibr_sim_65el_h10_idfTrue.npz', ItemBasedRecommender.S)
         else:
             ItemBasedRecommender.S = sps.load_npz(saved_similarity).tocsr()
 
