@@ -357,6 +357,52 @@ def split_train_test(track_playlist_couples, min_tracks_in_playlist=10, test_per
 
     return train, test, tgt_tracks, tgt_playlists
 
+def train_test_split_from_URM(interactions, min_interactions, split_count, fraction=None, random_state=None):
+    """ Split recommendation data into train and test sets
+        Params ------
+        interactions : scipy.sparse matrix Interactions between users and items.
+        split_count : int Number of user-item-interactions per user to move from training to test set.
+        fractions : float Fraction of users to split off some of their interactions into test set. If None, then all users are considered. """
+
+    train = interactions.copy().tocoo()
+    test = sps.lil_matrix(train.shape)
+    if (random_state):
+        np.random.seed(random_state)
+
+    if fraction:
+        try:
+            user_index = np.random.choice(np.where(np.bincount(train.row) >= min_interactions)[0], replace=False, size=np.int64(np.floor(fraction * train.shape[0]))).tolist()
+        except:
+            print(('Not enough users with > ' + str(min_interactions) + ' interactions for fraction of ' + str(fraction))
+            raise
+    else:
+        user_index = range(train.shape[0])
+
+    train = train.tolil()
+    for user in user_index:
+        test_interactions = np.random.choice(interactions.getrow(user).indices, size=split_count, replace=False)
+        train[user, test_interactions] = 0.
+        # These are just 1.0 right now
+        test[user, test_interactions] = interactions[user, test_interactions]
+
+    # Test and training are truly disjoint
+    assert (train.multiply(test).nnz == 0)
+    np.random.seed()
+
+    return train.tocsr(), test.tocsr(), user_index
+
+def train_test_split_interface(data, min_interactions=10, test_percentage=20, interactions_toremove=5, seed=2517):
+    IX_items, _, IX_playlists, _ = create_sparse_indexes(tracks_info=data, playlists=data)
+    interactions = create_tgt_URM(IX_playlists, IX_items, data)
+    train_M, test_M, tgt_playlists_ix = train_test_split_from_URM(data, min_interactions, interactions_toremove, test_percentage, seed)
+
+    train = pd.DataFrame({'playlist_id' : IX_playlists.index[train_M.nonzero[0]], 'track_id' : IX_items.index[train_M.nonzero[1]]})
+    test = pd.DataFrame({'playlist_id' : IX_playlists.index[test_M.nonzero[0]], 'track_id' : IX_items.index[test_M.nonzero[1]]})
+    tgt_tracks = pd.Dataframe({'track_id' : IX_items.index[np.unique(test_M.nonzero[1])]})
+    tgt_playlists = pd.Dataframe({'playlist_id' : IX_playlists.index[tgt_playlists_ix]})
+
+    return train, test, tgt_tracks, tgt_playlists
+
 def compute_idf(ICM):
     frequencies = np.asarray(ICM.sum(axis=1))
     n_items = ICM.shape[1]
