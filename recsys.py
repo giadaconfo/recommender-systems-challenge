@@ -373,12 +373,13 @@ def train_test_split_from_URM(interactions, min_interactions, split_count, fract
         try:
             user_index = np.random.choice(np.where(np.bincount(train.row) >= min_interactions)[0], replace=False, size=np.int64(np.floor(fraction * train.shape[0]))).tolist()
         except:
-            print(('Not enough users with > ' + str(min_interactions) + ' interactions for fraction of ' + str(fraction))
+            print(('Not enough users with > ' + str(min_interactions) + ' interactions for fraction of ' + str(fraction)))
             raise
     else:
         user_index = range(train.shape[0])
 
     train = train.tolil()
+    interactions = interactions.tocsr()
     for user in user_index:
         test_interactions = np.random.choice(interactions.getrow(user).indices, size=split_count, replace=False)
         train[user, test_interactions] = 0.
@@ -394,7 +395,7 @@ def train_test_split_from_URM(interactions, min_interactions, split_count, fract
 def train_test_split_interface(data, min_interactions=10, test_percentage=20, interactions_toremove=5, seed=2517):
     IX_items, _, IX_playlists, _ = create_sparse_indexes(tracks_info=data, playlists=data)
     interactions = create_tgt_URM(IX_playlists, IX_items, data)
-    train_M, test_M, tgt_playlists_ix = train_test_split_from_URM(data, min_interactions, interactions_toremove, test_percentage, seed)
+    train_M, test_M, tgt_playlists_ix = train_test_split_from_URM(interactions, min_interactions, interactions_toremove, test_percentage/100, seed)
 
     train = pd.DataFrame({'playlist_id' : IX_playlists.index[train_M.nonzero[0]], 'track_id' : IX_items.index[train_M.nonzero[1]]})
     test = pd.DataFrame({'playlist_id' : IX_playlists.index[test_M.nonzero[0]], 'track_id' : IX_items.index[test_M.nonzero[1]]})
