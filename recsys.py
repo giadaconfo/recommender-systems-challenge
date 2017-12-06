@@ -397,10 +397,11 @@ def train_test_split_interface(data, min_interactions=10, test_percentage=20, in
     interactions = create_tgt_URM(IX_playlists, IX_items, data)
     train_M, test_M, tgt_playlists_ix = train_test_split_from_URM(interactions, min_interactions, interactions_toremove, test_percentage/100, seed)
 
-    train = pd.DataFrame({'playlist_id' : IX_playlists.index[train_M.nonzero[0]], 'track_id' : IX_items.index[train_M.nonzero[1]]})
-    test = pd.DataFrame({'playlist_id' : IX_playlists.index[test_M.nonzero[0]], 'track_id' : IX_items.index[test_M.nonzero[1]]})
-    tgt_tracks = pd.Dataframe({'track_id' : IX_items.index[np.unique(test_M.nonzero[1])]})
-    tgt_playlists = pd.Dataframe({'playlist_id' : IX_playlists.index[tgt_playlists_ix]})
+    tgt_playlists = pd.DataFrame({'playlist_id' : IX_playlists.index[tgt_playlists_ix]})
+    train = pd.DataFrame({'playlist_id' : IX_playlists.index[train_M.nonzero()[0]], 'track_id' : IX_items.index[train_M.nonzero()[1]]})
+    test = pd.DataFrame({'playlist_id' : IX_playlists.index[test_M.nonzero()[0]], 'track_id' : IX_items.index[test_M.nonzero()[1]]})
+    tgt_tracks = pd.DataFrame({'track_id' : IX_items.index[np.unique(test_M.nonzero()[1])]})
+
 
     return train, test, tgt_tracks, tgt_playlists
 
