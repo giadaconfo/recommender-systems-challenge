@@ -4,8 +4,8 @@ import os.path
 from scipy import sparse as sps
 import recsys as rs
 from tqdm import tqdm
-#os.chdir('/Users/LucaButera/git/rschallenge')
-os.chdir('/home/giada/github/RecSys')
+os.chdir('/Users/LucaButera/git/rschallenge')
+#os.chdir('/home/giada/github/RecSys')
 
 class UserBasedRecommender:
 
@@ -27,7 +27,7 @@ class UserBasedRecommender:
     @saed_similarity: matrix to import
     @save_sim: set true to save the matrix that will be created
     '''
-    def fit(self, track_ids, train_data, tgt_playlists, saved_similarity=None,save_sim=False):
+    def fit(self, track_ids, train_data, tgt_playlists, saved_similarity=None, save_sim=False):
         UserBasedRecommender.IX_items, _, UserBasedRecommender.IX_playlists, _ = rs.create_sparse_indexes(tracks_info=track_ids, playlists=train_data)
         _, _, UserBasedRecommender.IX_tgt_playlists, _ = rs.create_sparse_indexes(playlists=tgt_playlists)
         print('Calculated Indices')
@@ -42,7 +42,7 @@ class UserBasedRecommender:
             print('Model URM regularized with IDF!')
 
         if saved_similarity is None:
-            UserBasedRecommender.S, _ = rs.create_Smatrix(model_URM.T, self.n_el_sim, self.measure, self.shrinkage, UserBasedRecommender.IX_tgt_playlists, UserBasedRecommender.IX_playlists)
+            UserBasedRecommender.S = rs.create_Smatrix(model_URM.T, self.n_el_sim, self.measure, self.shrinkage, UserBasedRecommender.IX_tgt_playlists, UserBasedRecommender.IX_playlists)
             print('Similarity built')
             if save_sim:
                 sps.save_npz('BuiltStructures/ubr_sim_65el_impcos.npz', UserBasedRecommender.S)

@@ -4,8 +4,8 @@ import os.path
 from scipy import sparse as sps
 import recsys as rs
 from tqdm import tqdm
-#os.chdir('/Users/LucaButera/git/rschallenge')
-os.chdir('/home/giada/github/RecSys')
+os.chdir('/Users/LucaButera/git/rschallenge')
+#os.chdir('/home/giada/github/RecSys')
 
 class TopSimilarRecommender:
 
@@ -46,7 +46,8 @@ class TopSimilarRecommender:
             print('ICM regularized with IDF!')
         if saved_similarity is None:
             if TopSimilarRecommender.IX_tgt_items is not None:
-                TopSimilarRecommender.S, TopSimilarRecommender.den  = rs.create_Smatrix(TopSimilarRecommender.ICM, self.n_el_sim, self.measure, self.shrinkage, TopSimilarRecommender.IX_tgt_items, TopSimilarRecommender.IX_items)
+                TopSimilarRecommender.S = rs.create_Smatrix(TopSimilarRecommender.ICM, self.n_el_sim, self.measure, self.shrinkage, TopSimilarRecommender.IX_tgt_items, TopSimilarRecommender.IX_items)
+                TopSimilarRecommender.den = TopSimilarRecommender.S
             else:
                 TopSimilarRecommender.S = rs.create_Smatrix(TopSimilarRecommender.ICM, self.n_el_sim, self.measure, self.shrinkage)
             print('Similarity built')

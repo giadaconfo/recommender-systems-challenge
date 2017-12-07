@@ -4,8 +4,8 @@ import os.path
 from scipy import sparse as sps
 import recsys as rs
 from tqdm import tqdm
-#os.chdir('/Users/LucaButera/git/rschallenge')
-os.chdir('/home/giada/github/RecSys')
+os.chdir('/Users/LucaButera/git/rschallenge')
+#os.chdir('/home/giada/github/RecSys')
 
 class ItemBasedRecommender:
 
@@ -42,7 +42,8 @@ class ItemBasedRecommender:
             print('Model URM regularized with IDF!')
         if saved_similarity is None:
             if ItemBasedRecommender.IX_tgt_items is not None:
-                ItemBasedRecommender.S, ItemBasedRecommender.den = rs.create_Smatrix(model_URM, self.n_el_sim, self.measure, self.shrinkage, ItemBasedRecommender.IX_tgt_items, ItemBasedRecommender.IX_items)
+                ItemBasedRecommender.S = rs.create_Smatrix(model_URM, self.n_el_sim, self.measure, self.shrinkage, ItemBasedRecommender.IX_tgt_items, ItemBasedRecommender.IX_items)
+                ItemBasedRecommender.den = ItemBasedRecommender.S
             else:
                 ItemBasedRecommender.S = rs.create_Smatrix(model_URM, self.n_el_sim, self.measure, self.shrinkage)
                 print('Similarity built')
