@@ -49,36 +49,7 @@
   "alpha_ensemble": 0.6,
   "evaluation_result": 0.09117194570135764
 }
-{
-  "recommender_type": "UserBasedRecommender",
-  "fit_parameters": {
-    "idf": true,
-    "measure": "dot",
-    "shrinkage": 0,
-    "n_el_sim": 20
-  },
-  "evaluation_result": 0.025173453996983446
-}
-{
-  "recommender_type": "UserBasedRecommender",
-  "fit_parameters": {
-    "idf": false,
-    "measure": "prob",
-    "shrinkage": 10,
-    "n_el_sim": 20
-  },
-  "evaluation_result": 0.025767722473604857
-}
-{
-  "recommender_type": "UserBasedRecommender",
-  "fit_parameters": {
-    "idf": false,
-    "measure": "cos",
-    "shrinkage": 10,
-    "n_el_sim": 20
-  },
-  "evaluation_result": 0.027436651583710434
-}
+
 {
   "recommender_type": "UserBasedRecommender",
   "fit_parameters": {
@@ -90,62 +61,37 @@
   "evaluation_result": 0.0296085972850679
 }
 {
-  "recommender_type": "UserBasedRecommender",
-  "fit_parameters": {
-    "idf": false,
-    "measure": "cos",
-    "shrinkage": 20,
+  "recommender_1": "TopSimilarRecommender",
+  "recommender_2": "ItemBasedRecommender",
+  "recommender_3": "UserBasedRecommender",
+  "fit_parameters_1": {
+    "attributes": [
+      "artist_id",
+      "album",
+      "playcount"
+    ],
+    "n_min_attr": 90,
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 0,
     "n_el_sim": 65
   },
-  "evaluation_result": 0.02856636500754151
-}
-{
-  "recommender_type": "UserBasedRecommender",
-  "fit_parameters": {
-    "idf": false,
-    "measure": "cos",
-    "shrinkage": 15,
-    "n_el_sim": 60
+  "fit_parameters_2": {
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 10,
+    "n_el_sim": 65
   },
-  "evaluation_result": 0.02775188536953241
-}
-{
-  "recommender_type": "UserBasedRecommender",
-  "fit_parameters": {
-    "idf": false,
-    "measure": "cos",
-    "shrinkage": 25,
-    "n_el_sim": 55
-  },
-  "evaluation_result": 0.027523378582202114
-}
-{
-  "recommender_type": "UserBasedRecommender",
-  "fit_parameters": {
-    "idf": false,
-    "measure": "imp_cos",
-    "shrinkage": 20,
-    "n_el_sim": 40
-  },
-  "evaluation_result": 0.02546304675716439
-}
-{
-  "recommender_type": "UserBasedRecommender",
-  "fit_parameters": {
-    "idf": false,
+  "fit_parameters_3": {
+    "idf": true,
     "measure": "imp_cos",
     "shrinkage": 20,
     "n_el_sim": 50
   },
-  "evaluation_result": 0.025763951734540002
-}
-{
-  "recommender_type": "UserBasedRecommender",
-  "fit_parameters": {
-    "idf": false,
-    "measure": "imp_cos",
-    "shrinkage": 20,
-    "n_el_sim": 50
-  },
-  "evaluation_result": 0.02906636500754151
+  "alpha1_only_ratings": 0.3,
+  "alpha2_only_ratings": 0.3,
+  "beta1_bilevel": 0.6,
+  "beta2_bilevel": 0.01,
+  "evaluation_only_ratings": 0.08826669587760731,
+  "evaluation_bilevel": 0.08361923540365943
 }
