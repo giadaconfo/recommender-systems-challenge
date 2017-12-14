@@ -4,7 +4,7 @@ import os.path
 from scipy import sparse as sps
 import recsys as rs
 from tqdm import tqdm
-os.chdir('/Users/LucaButera/git/rschallenge')
+#os.chdir('/Users/LucaButera/git/rschallenge')
 #os.chdir('/home/giada/github/RecSys')
 
 class UserBasedRecommender:

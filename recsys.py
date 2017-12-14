@@ -248,7 +248,7 @@ def create_Smatrix(ICM, n_el=20, measure='dot',shrinkage=0, IX_tgt_items=None, I
         data = np.append(data, sim[sort])
         rows = np.append(rows, np.array([i]*n_el,dtype='int32'))
         columns = np.append(columns, sort)
-
+        
     S = sps.coo_matrix((data,(rows,columns)), shape=(l, h))
     return S
 '''TO BE FIXED
