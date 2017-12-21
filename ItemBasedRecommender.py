@@ -25,7 +25,7 @@ class ItemBasedRecommender:
     @saved_similarity: matrix to import
     @save_sim: set true to save the matrix that will be created
     '''
-    def fit(self, track_ids, train_data, tgt_tracks=None, URM=None, saved_similarity=None, save_sim=False):
+    def fit(self, track_ids, train_data, tgt_tracks=None, URM=None, saved_similarity=None, save_sim=False, multiprocessing=False):
         ItemBasedRecommender.IX_items, ItemBasedRecommender.IX_tgt_items, playlists_ix, _ = rs.create_sparse_indexes(tracks_info=track_ids, playlists=train_data, tracks_reduced=tgt_tracks)
         print('Calculated Indices')
 
@@ -41,9 +41,9 @@ class ItemBasedRecommender:
             print('Model URM regularized with IDF!')
         if saved_similarity is None:
             if ItemBasedRecommender.IX_tgt_items is not None:
-                ItemBasedRecommender.S = rs.create_Smatrix(model_URM, self.n_el_sim, self.measure, self.shrinkage, ItemBasedRecommender.IX_tgt_items, ItemBasedRecommender.IX_items)
+                ItemBasedRecommender.S = rs.create_Smatrix(model_URM, self.n_el_sim, self.measure, self.shrinkage, ItemBasedRecommender.IX_tgt_items, ItemBasedRecommender.IX_items, multiprocessing)
             else:
-                ItemBasedRecommender.S = rs.create_Smatrix(model_URM, self.n_el_sim, self.measure, self.shrinkage)
+                ItemBasedRecommender.S = rs.create_Smatrix(model_URM, self.n_el_sim, self.measure, self.shrinkage, multiprocessing)
                 print('Similarity built')
             if save_sim:
                 sps.save_npz('BuiltStructures/ibr_sim_65el_h10_idfTrue.npz', ItemBasedRecommender.S)

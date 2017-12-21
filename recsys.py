@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import os.path
+import time
 from scipy import sparse as sps
 from scipy.sparse import linalg as la
 import math
@@ -10,6 +11,7 @@ import ctypes
 import random
 from tqdm import tqdm
 from sklearn import preprocessing as prp
+from multiprocessing import Pool, cpu_count
 
 def fix_tracks_format(df):
     data = df.copy()
@@ -166,29 +168,26 @@ def delete_low_frequency_attributes(dataset, attributes, n_min):
     return dataset
 
 #Requires the sparse index for target playlists, for items and the dataset with playlists/tracks couples
-def create_tgt_URM(IX_tgt_playlists, IX_items, playlist_to_track):
-    rows = np.array([], dtype='int32')
-    columns = np.array([], dtype='int32')
-    for p in tqdm(IX_tgt_playlists.index.values):
-        tracks = playlist_to_track[playlist_to_track['playlist_id'] == p]['track_id'].values.astype('int32')
-        rows = np.append(rows, np.array([IX_tgt_playlists.loc[p]]*tracks.size,dtype='int32'))
-        columns = np.append(columns, IX_items.loc[tracks])
-    data = np.array([1]*len(rows), dtype='int32')
+def create_tgt_URM(IX_tgt_playlists, IX_items, train):
+    train = train.drop_duplicates()
+    train = train[train['playlist_id'].isin(IX_tgt_playlists.index)]
 
-    URM = sps.coo_matrix((data,(rows,columns)), shape=(IX_tgt_playlists.index.shape[0], IX_items.shape[0]))
+    rows = IX_tgt_playlists[train['playlist_id']].values
+    columns = IX_items[train['track_id']].values
+    data = np.ones(train.shape[0])
+
+    URM = sps.coo_matrix((data,(rows,columns)), dtype=np.int32, shape=(IX_tgt_playlists.index.shape[0], IX_items.shape[0]))
     return URM
 
 def create_UBR_URM(IX_playlists, IX_tgt_items, train):
-    rows = np.array([], dtype='int32')
-    columns = np.array([], dtype='int32')
-    for p in tqdm(IX_playlists.index.values):
-        tracks = train[train['playlist_id'] == p]['track_id'].values.astype('int32')
-        tracks = tracks[np.in1d(tracks, IX_tgt_items.index)]
-        rows = np.append(rows, np.array([IX_playlists.loc[p]]*tracks.size,dtype='int32'))
-        columns = np.append(columns, IX_tgt_items.loc[tracks])
-    data = np.array([1]*len(rows), dtype='int32')
+    train = train.drop_duplicates()
+    train = train[train['track_id'].isin(IX_tgt_items.index)]
 
-    URM = sps.coo_matrix((data,(rows,columns)), shape=(IX_playlists.index.shape[0], IX_tgt_items.shape[0]))
+    rows = IX_playlists[train['playlist_id']].values
+    columns = IX_tgt_items[train['track_id']].values
+    data = np.ones(train.shape[0])
+
+    URM = sps.coo_matrix((data,(rows,columns)), dtype=np.int32, shape=(IX_playlists.index.shape[0], IX_tgt_items.shape[0]))
     return URM
 
 def calculate_dot(ICM_i, rec_ICM, shrinkage=0):
@@ -214,7 +213,34 @@ def calculate_implicit_cos(ICM_i, rec_ICM, shrinkage=0):
     imp_cos = np.divide(dot, ICM_modules * i_module + shrinkage)
     return imp_cos
 
-def create_Smatrix(ICM, n_el=20, measure='dot',shrinkage=0, IX_tgt_items=None, IX_items=None):
+class SimProcessEnvironment:
+    def __init__(self, rec_ICM, n_el, measure, shrinkage, IX_tgt_items, IX_items, h):
+        self.rec_ICM = rec_ICM
+        self.n_el = n_el
+        self.measure = measure
+        self.shrinkage = shrinkage
+        self.IX_tgt_items = IX_tgt_items
+        self.IX_items = IX_items
+        self.h = h
+
+    def step(self, chunk):
+        for i in range(chunk.shape[1]):
+            sim = self.measure(chunk[:,i], self.rec_ICM, self.shrinkage)
+            if (self.IX_tgt_items is None and self.IX_items is None):
+                sim[i] = 0
+            elif (self.IX_tgt_items is not None and self.IX_items is not None and self.IX_items.index.values[i] in self.IX_tgt_items.index.values):
+                sim[self.IX_tgt_items.loc[self.IX_items.index.values[i]]] = 0
+
+            sort = np.argsort(sim)[-self.n_el:].astype(np.int32)
+            data = np.append(data, sim[sort])
+            rows = np.append(rows, np.array([i]*self.n_el,dtype='int32'))
+            columns = np.append(columns, sort)
+
+            if not i%1000: print('Computing!')
+
+        S = sps.coo_matrix((data,(rows,columns)), dtype=np.int32, shape=(chunk.shape[1], self.h))
+
+def create_Smatrix(ICM, n_el=20, measure='dot',shrinkage=0, IX_tgt_items=None, IX_items=None, multiprocessing=False):
     if ((IX_tgt_items is not None and IX_items is None) or (IX_tgt_items is None and IX_items is not None)):
         sys.exit('Error: IX_items and IX_tgt_items must be both None or both defined')
 
@@ -235,21 +261,38 @@ def create_Smatrix(ICM, n_el=20, measure='dot',shrinkage=0, IX_tgt_items=None, I
         rec_ICM = ICM
         h = l
 
-    for i in tqdm(range(l)):
-        sim = getattr(SimMeasures, measure)(ICM[:,i], rec_ICM, shrinkage)
-        if (IX_tgt_items is None and IX_items is None):
-            sim[i] = 0
-        #SEEMS TO WORK, KEEP AN EYE ON IT!
-        elif (IX_tgt_items is not None and IX_items is not None and IX_items.index.values[i] in IX_tgt_items.index.values):
-            sim[IX_tgt_items.loc[IX_items.index.values[i]]] = 0
-            #print('Diagonal to 0 at iteration #' + str(i))
+    rec_ICM = rec_ICM.tocsr()
 
-        sort = np.argsort(sim)[-n_el:].astype(np.int32)
-        data = np.append(data, sim[sort])
-        rows = np.append(rows, np.array([i]*n_el,dtype='int32'))
-        columns = np.append(columns, sort)
-        
-    S = sps.coo_matrix((data,(rows,columns)), shape=(l, h))
+    if not multiprocessing:
+        for i in tqdm(range(l)):
+            sim = getattr(SimMeasures, measure)(ICM[:,i], rec_ICM, shrinkage)
+            if (IX_tgt_items is None and IX_items is None):
+                sim[i] = 0
+                #SEEMS TO WORK, KEEP AN EYE ON IT!
+            elif (IX_tgt_items is not None and IX_items is not None and IX_items.index.values[i] in IX_tgt_items.index.values):
+                sim[IX_tgt_items.loc[IX_items.index.values[i]]] = 0
+
+            sort = np.argsort(sim)[-n_el:].astype(np.int32)
+            data = np.append(data, sim[sort])
+            rows = np.append(rows, np.array([i]*n_el,dtype='int32'))
+            columns = np.append(columns, sort)
+        S = sps.coo_matrix((data,(rows,columns)), dtype=np.int32, shape=(l, h))
+
+    else:
+        step_env = SimProcessEnvironment(rec_ICM, n_el, getattr(SimMeasures, measure), shrinkage, IX_tgt_items, IX_items, h)
+        sim_chunks = []
+        chunk_len = int(l/cpu_count())
+        chunk_flag = 0
+        for i in range(cpu_count()):
+            if not i+1 == cpu_count():
+                sim_chunks += ICM[:,chunk_flag:chunk_flag+chunk_len]
+            else:
+                sim_chunks += ICM[:,chunk_flag:-1]
+            chunk_flag += chunk_len
+        with Pool() as pool:
+            results = pool.map(step_env.step, sim_chunks)
+        S = sps.vstack(results)
+
     return S
 '''TO BE FIXED
 def top5_outside_playlist(ratings, p_id, train_playlists_tracks_pairs, IX_tgt_playlists, IX_tgt_items, sim_check, secondary_sorting):
