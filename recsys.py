@@ -197,10 +197,10 @@ def create_UBR_URM(IX_playlists, IX_tgt_items, train):
         tracks = tracks[np.in1d(tracks, IX_tgt_items.index)]
         rows = np.append(rows, np.array([IX_playlists.loc[p]]*tracks.size,dtype='int32'))
         columns = np.append(columns, IX_tgt_items.loc[tracks])
-     data = np.array([1]*len(rows), dtype='int32')
+    data = np.array([1]*len(rows), dtype='int32')
 
-     URM = sps.coo_matrix((data,(rows,columns)), shape=(IX_playlists.index.shape[0], IX_tgt_items.shape[0]))
-     return URM
+    URM = sps.coo_matrix((data,(rows,columns)), shape=(IX_playlists.index.shape[0], IX_tgt_items.shape[0]))
+    return URM
 
 def create_UBR_URM_new(IX_playlists, IX_tgt_items, train):
     train = train.drop_duplicates()
