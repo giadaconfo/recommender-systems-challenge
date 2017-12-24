@@ -147,3 +147,143 @@
   },
   "evaluation_bilevel": 0.065837075984957
 }
+{
+  "recommender": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": true,
+    "measure": "imp_cos",
+    "shrinkage": 20,
+    "n_el_sim": 50
+  },
+  "evaluation": 0.021204220980757256
+}
+{
+  "recommender": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": true,
+    "measure": "imp_cos",
+    "shrinkage": 10,
+    "n_el_sim": 50
+  },
+  "evaluation": 0.025954284879687362
+}
+{
+  "recommender": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": true,
+    "measure": "imp_cos",
+    "shrinkage": 30,
+    "n_el_sim": 50
+  },
+  "evaluation": 0.017949026910577977
+}
+{
+  "recommender": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": true,
+    "measure": "imp_cos",
+    "shrinkage": 5,
+    "n_el_sim": 50
+  },
+  "evaluation": 0.027575492021762023
+}
+{
+  "recommender": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": true,
+    "measure": "imp_cos",
+    "shrinkage": 20,
+    "n_el_sim": 60
+  },
+  "evaluation": 0.021204220980757256
+}
+{
+  "recommender": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": true,
+    "measure": "imp_cos",
+    "shrinkage": 20,
+    "n_el_sim": 55
+  },
+  "evaluation": 0.021204220980757256
+}
+{
+  "recommender": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": true,
+    "measure": "imp_cos",
+    "shrinkage": 20,
+    "n_el_sim": 45
+  },
+  "evaluation": 0.021204220980757256
+}
+{
+  "recommender": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": true,
+    "measure": "imp_cos",
+    "shrinkage": 20,
+    "n_el_sim": 20
+  },
+  "evaluation": 0.021204220980757256
+}
+{
+  "recommender": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": true,
+    "measure": "imp_cos",
+    "shrinkage": 15,
+    "n_el_sim": 50
+  },
+  "evaluation": 0.023537079636323753
+}
+{
+  "recommender": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": true,
+    "measure": "imp_cos",
+    "shrinkage": 20,
+    "n_el_sim": 70
+  },
+  "evaluation": 0.021204220980757256
+}
+{
+  "recommender": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": true,
+    "measure": "imp_cos",
+    "shrinkage": 20,
+    "n_el_sim": 50
+  },
+  "evaluation": 0.021204220980757256
+}
+{
+  "recommender": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": true,
+    "measure": "cos",
+    "shrinkage": 20,
+    "n_el_sim": 50
+  },
+  "evaluation": 0.0009007923467338516
+}
+{
+  "recommender": "ItemBasedRecommender",
+  "fit_parameters": {
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 10,
+    "n_el_sim": 65
+  },
+  "evaluation": 0.015689925877241016
+}
+{
+  "recommender": "ItemBasedRecommender",
+  "fit_parameters": {
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 10,
+    "n_el_sim": 65
+  },
+  "evaluation": 0.03879870011319247
+}

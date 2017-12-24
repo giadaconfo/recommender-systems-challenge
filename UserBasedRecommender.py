@@ -4,6 +4,7 @@ import os.path
 from scipy import sparse as sps
 import recsys as rs
 from tqdm import tqdm
+from multiprocessing import Pool, cpu_count
 #os.chdir('/Users/LucaButera/git/rschallenge')
 #os.chdir('/home/giada/github/RecSys')
 
@@ -48,17 +49,38 @@ class UserBasedRecommender:
                 sps.save_npz('BuiltStructures/ubr_sim_65el_impcos.npz', UserBasedRecommender.S)
         else:
             UserBasedRecommender.S = sps.load_npz(saved_similarity).tocsr()
-    def recommend(self, tgt_items, train_data, sim_check=True, secondary_sorting=True):
+    def recommend(self, tgt_items, train_data, normalize=False, H=20, sim_check=True, secondary_sorting=True):
         _, UserBasedRecommender.IX_tgt_items, _, _ = rs.create_sparse_indexes(tracks_reduced=tgt_items)
         URM = rs.create_UBR_URM(UserBasedRecommender.IX_playlists, UserBasedRecommender.IX_tgt_items, train_data)
         URM = URM.tocsr()
         print('URM built')
 
-        recommendetions = np.array([])
         UserBasedRecommender.S = UserBasedRecommender.S.T.tocsr()
-        for p in UserBasedRecommender.IX_tgt_playlists.values:
-            avg_sims = UserBasedRecommender.S[p,:].dot(URM).toarray().ravel()
-            top = rs.top5_outside_playlist(avg_sims, p, train_data, UserBasedRecommender.IX_tgt_playlists, UserBasedRecommender.IX_tgt_items, sim_check, secondary_sorting)
-            recommendetions = np.append(recommendetions, rs.sub_format(top))
+        if normalize:
+            div = TopSimilarRecommender.S.sum(axis=0)
+            norm_factor = div+H
+        else:
+            norm_factor=1
 
-        return pd.DataFrame({'playlist_id' : UserBasedRecommender.IX_tgt_playlists.index.values, 'track_ids' : recommendetions})
+        if not multiprocessing:
+            recommendetions = np.array([])
+            for p in tqdm(UserBasedRecommender.IX_tgt_playlists.values):
+                avg_sims = (ubr.S[p,:].multiply(1/(norm_factor)).dot(URM).toarray().ravel())
+                top = rs.top5_outside_playlist(avg_sims, p, train_data, UserBasedRecommender.IX_tgt_playlists, UserBasedRecommender.IX_tgt_items, sim_check, secondary_sorting)
+                recommendetions = np.append(recommendetions, rs.sub_format(top))
+            recs = pd.DataFrame({'playlist_id' : UserBasedRecommender.IX_tgt_playlists.index.values, 'track_ids' : recommendetions})
+        else:
+            step_env = rs.RecProcessEnvironment(train_playlists_tracks_pairs, UserBasedRecommender.IX_tgt_playlists, UserBasedRecommender.IX_tgt_items, URM, norm_factor, sim_check, secondary_sorting, userbased=True)
+            sim_chunks = [i for i in range(cpu_count())]
+            chunk_len = int(ubr.S.shape[0]/cpu_count())
+            chunk_flag = 0
+            for i in range(cpu_count()):
+                if not i+1 == cpu_count():
+                    sim_chunks[i] = ubr.S[chunk_flag:chunk_flag+chunk_len, :]
+                else:
+                    sim_chunks[i] = ubr.S[chunk_flag:, :]
+                chunk_flag += chunk_len
+            with Pool() as pool:
+                results = pool.map(step_env.step, sim_chunks)
+            recs = pd.DataFrame({'playlist_id' : IX_tgt_playlists.index.values, 'track_ids' : np.concatenate(results)})
+        return recs

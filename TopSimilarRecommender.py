@@ -4,6 +4,7 @@ import os.path
 from scipy import sparse as sps
 import recsys as rs
 from tqdm import tqdm
+from multiprocessing import Pool, cpu_count
 #os.chdir('/Users/LucaButera/git/rschallenge')
 #os.chdir('/home/giada/github/RecSys')
 
@@ -58,22 +59,37 @@ class TopSimilarRecommender:
 
 
 
-    def recommend(self, tgt_playlists, train_playlists_tracks_pairs, normalize=False, sim_check=True, secondary_sorting=True):
+    def recommend(self, tgt_playlists, train_playlists_tracks_pairs, normalize=False, H=30, sim_check=True, secondary_sorting=True, multiprocessing=False):
         _, _, TopSimilarRecommender.IX_tgt_playlists, _ = rs.create_sparse_indexes(playlists=tgt_playlists)
         URM = rs.create_tgt_URM(TopSimilarRecommender.IX_tgt_playlists, TopSimilarRecommender.IX_items, train_playlists_tracks_pairs)
         URM = URM.tocsr()
         print('URM built')
 
-        recommendetions = np.array([])
         if normalize:
-            norm_dividend = np.squeeze(np.asarray(TopSimilarRecommender.S.tocsc().sum(axis=0)))
-            norm_dividend[norm_dividend == 0] = 1
+            div = TopSimilarRecommender.S.sum(axis=0)
+            norm_factor = div+H
+        else:
+            norm_factor=1
 
-        for p in tqdm(TopSimilarRecommender.IX_tgt_playlists.values):
-            if normalize:
-                avg_sims = np.divide(URM[p,:].dot(TopSimilarRecommender.S).toarray(), norm_dividend).ravel()
-            avg_sims = URM[p,:].dot(TopSimilarRecommender.S).toarray().ravel()
-            top = rs.top5_outside_playlist(avg_sims, p, train_playlists_tracks_pairs, TopSimilarRecommender.IX_tgt_playlists, TopSimilarRecommender.IX_tgt_items, sim_check, secondary_sorting)
-            recommendetions = np.append(recommendetions, rs.sub_format(top))
-
-        return pd.DataFrame({'playlist_id' : TopSimilarRecommender.IX_tgt_playlists.index.values, 'track_ids' : recommendetions})
+        if not multiprocessing:
+            recommendetions = np.array([])
+            for p in tqdm(TopSimilarRecommender.IX_tgt_playlists.values):
+                avg_sims = (URM[p,:].dot(TopSimilarRecommender.S).toarray().ravel())/(norm_factor)
+                top = rs.top5_outside_playlist(avg_sims, p, train_playlists_tracks_pairs, TopSimilarRecommender.IX_tgt_playlists, TopSimilarRecommender.IX_tgt_items, sim_check, secondary_sorting)
+                recommendetions = np.append(recommendetions, rs.sub_format(top))
+            recs = pd.DataFrame({'playlist_id' : TopSimilarRecommender.IX_tgt_playlists.index.values, 'track_ids' : recommendetions})
+        else:
+            step_env = rs.RecProcessEnvironment(train_playlists_tracks_pairs, TopSimilarRecommender.IX_tgt_playlists, TopSimilarRecommender.IX_tgt_items, TopSimilarRecommender.S, norm_factor, sim_check, secondary_sorting)
+            sim_chunks = [i for i in range(cpu_count())]
+            chunk_len = int(URM.shape[0]/cpu_count())
+            chunk_flag = 0
+            for i in range(cpu_count()):
+                if not i+1 == cpu_count():
+                    sim_chunks[i] = URM[chunk_flag:chunk_flag+chunk_len, :]
+                else:
+                    sim_chunks[i] = URM[chunk_flag:, :]
+                chunk_flag += chunk_len
+            with Pool() as pool:
+                results = pool.map(step_env.step, sim_chunks)
+            recs = pd.DataFrame({'playlist_id' : IX_tgt_playlists.index.values, 'track_ids' : np.concatenate(results)})
+        return recs

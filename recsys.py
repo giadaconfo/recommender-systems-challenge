@@ -224,6 +224,9 @@ class SimProcessEnvironment:
         self.h = h
 
     def step(self, chunk):
+        data = np.array([],dtype='float32')
+        rows = np.array([],dtype='int32')
+        columns = np.array([],dtype='int32')
         for i in range(chunk.shape[1]):
             sim = self.measure(chunk[:,i], self.rec_ICM, self.shrinkage)
             if (self.IX_tgt_items is None and self.IX_items is None):
@@ -236,9 +239,35 @@ class SimProcessEnvironment:
             rows = np.append(rows, np.array([i]*self.n_el,dtype='int32'))
             columns = np.append(columns, sort)
 
-            if not i%1000: print('Computing!')
+            if not i%5000: print('Computed '+str(i)+' similarities over chunk of '+str(chunk.shape[1])+' elements.')
 
-        S = sps.coo_matrix((data,(rows,columns)), dtype=np.int32, shape=(chunk.shape[1], self.h))
+        S = sps.coo_matrix((data,(rows,columns)), dtype=np.float32, shape=(chunk.shape[1], self.h))
+        return S
+
+class RecProcessEnvironment:
+    def __init__(self, data, IX_tgt_playlists, IX_tgt_items, M, norm_factor=1, sim_check=True, secondary_sorting=True, userbased=False):
+        self.data = data
+        self.IX_tgt_playlists = IX_tgt_playlists
+        self.IX_tgt_items = IX_tgt_items
+        self.M = M
+        self.norm_factor = norm_factor
+        self.sim_check = sim_check
+        self.secondary_sorting = secondary_sorting
+        self.userbased = userbased
+
+    def step(self, chunk):
+        recommendetions = np.array([])
+        for p in range(chunk.shape[0]):
+            if not self.userbased:
+                avg_sims = (chunk[p,:].dot(self.M).toarray().ravel())/(self.norm_factor)
+            else:
+                avg_sims = (chunk[p,:].multiply(1/(self.norm_factor)).dot(self.M).toarray().ravel())
+            top = top5_outside_playlist(avg_sims, p, self.data, self.IX_tgt_playlists, self.IX_tgt_items, self.sim_check, self.secondary_sorting)
+            recommendetions = np.append(recommendetions, sub_format(top))
+
+            if not p%1000: print('Computed '+str(p)+' recommendetions over chunk of '+str(chunk.shape[0])+' elements.')
+
+        return recommendetions
 
 def create_Smatrix(ICM, n_el=20, measure='dot',shrinkage=0, IX_tgt_items=None, IX_items=None, multiprocessing=False):
     if ((IX_tgt_items is not None and IX_items is None) or (IX_tgt_items is None and IX_items is not None)):
@@ -246,10 +275,6 @@ def create_Smatrix(ICM, n_el=20, measure='dot',shrinkage=0, IX_tgt_items=None, I
 
     Measures = collections.namedtuple('Measures', ['dot', 'cos', 'prob', 'imp_cos'])
     SimMeasures = Measures(*[calculate_dot, calculate_cos, calculate_prob, calculate_implicit_cos])
-
-    data = np.array([],dtype='float32')
-    rows = np.array([],dtype='int32')
-    columns = np.array([],dtype='int32')
     l = ICM.shape[1]
 
     ICM = ICM.tocsc()
@@ -264,6 +289,9 @@ def create_Smatrix(ICM, n_el=20, measure='dot',shrinkage=0, IX_tgt_items=None, I
     rec_ICM = rec_ICM.tocsr()
 
     if not multiprocessing:
+        data = np.array([],dtype='float32')
+        rows = np.array([],dtype='int32')
+        columns = np.array([],dtype='int32')
         for i in tqdm(range(l)):
             sim = getattr(SimMeasures, measure)(ICM[:,i], rec_ICM, shrinkage)
             if (IX_tgt_items is None and IX_items is None):
@@ -276,18 +304,18 @@ def create_Smatrix(ICM, n_el=20, measure='dot',shrinkage=0, IX_tgt_items=None, I
             data = np.append(data, sim[sort])
             rows = np.append(rows, np.array([i]*n_el,dtype='int32'))
             columns = np.append(columns, sort)
-        S = sps.coo_matrix((data,(rows,columns)), dtype=np.int32, shape=(l, h))
+        S = sps.coo_matrix((data,(rows,columns)), dtype=np.float32, shape=(l, h))
 
     else:
         step_env = SimProcessEnvironment(rec_ICM, n_el, getattr(SimMeasures, measure), shrinkage, IX_tgt_items, IX_items, h)
-        sim_chunks = []
+        sim_chunks = [i for i in range(cpu_count())]
         chunk_len = int(l/cpu_count())
         chunk_flag = 0
         for i in range(cpu_count()):
             if not i+1 == cpu_count():
-                sim_chunks += ICM[:,chunk_flag:chunk_flag+chunk_len]
+                sim_chunks[i] = ICM[:, chunk_flag:chunk_flag+chunk_len]
             else:
-                sim_chunks += ICM[:,chunk_flag:-1]
+                sim_chunks[i] = ICM[:,chunk_flag:]
             chunk_flag += chunk_len
         with Pool() as pool:
             results = pool.map(step_env.step, sim_chunks)
