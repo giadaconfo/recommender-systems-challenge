@@ -166,7 +166,7 @@ def delete_low_frequency_attributes(dataset, attributes, n_min):
         else:
             dataset[a] = dataset[a].apply(lambda x: float('NaN') if x in to_del else x)
     return dataset
-def create_tgt_URM(IX_tgt_playlists, IX_items, playlist_to_track):
+def create_tgt_URM_old(IX_tgt_playlists, IX_items, playlist_to_track):
     rows = np.array([], dtype='int32')
     columns = np.array([], dtype='int32')
     for p in tqdm(IX_tgt_playlists.index.values):
@@ -178,7 +178,7 @@ def create_tgt_URM(IX_tgt_playlists, IX_items, playlist_to_track):
     return URM
 
 #Requires the sparse index for target playlists, for items and the dataset with playlists/tracks couples
-def create_tgt_URM_new(IX_tgt_playlists, IX_items, train):
+def create_tgt_URM(IX_tgt_playlists, IX_items, train):
     train = train.drop_duplicates()
     train = train[train['playlist_id'].isin(IX_tgt_playlists.index)]
 
@@ -189,7 +189,7 @@ def create_tgt_URM_new(IX_tgt_playlists, IX_items, train):
     URM = sps.coo_matrix((data,(rows,columns)), dtype=np.int32, shape=(IX_tgt_playlists.index.shape[0], IX_items.shape[0]))
     return URM
 
-def create_UBR_URM(IX_playlists, IX_tgt_items, train):
+def create_UBR_URM_old(IX_playlists, IX_tgt_items, train):
     rows = np.array([], dtype='int32')
     columns = np.array([], dtype='int32')
     for p in tqdm(IX_playlists.index.values):
@@ -202,7 +202,7 @@ def create_UBR_URM(IX_playlists, IX_tgt_items, train):
     URM = sps.coo_matrix((data,(rows,columns)), shape=(IX_playlists.index.shape[0], IX_tgt_items.shape[0]))
     return URM
 
-def create_UBR_URM_new(IX_playlists, IX_tgt_items, train):
+def create_UBR_URM(IX_playlists, IX_tgt_items, train):
     train = train.drop_duplicates()
     train = train[train['track_id'].isin(IX_tgt_items.index)]
 
@@ -282,7 +282,7 @@ class RecProcessEnvironment:
         recommendetions = np.array([])
         for p in range(chunk.shape[0]):
             if not self.userbased:
-                avg_sims = (chunk[p,:].dot(self.M).toarray().ravel())/(self.norm_factor)
+                avg_sims = np.array((chunk[p,:].dot(self.M).toarray().ravel())/(self.norm_factor)).ravel()
             else:
                 avg_sims = (chunk[p,:].multiply(1/(self.norm_factor)).dot(self.M).toarray().ravel())
             top = top5_outside_playlist(avg_sims, p, self.data, self.IX_tgt_playlists, self.IX_tgt_items, self.sim_check, self.secondary_sorting)

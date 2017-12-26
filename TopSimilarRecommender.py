@@ -74,7 +74,7 @@ class TopSimilarRecommender:
         if not multiprocessing:
             recommendetions = np.array([])
             for p in tqdm(TopSimilarRecommender.IX_tgt_playlists.values):
-                avg_sims = (URM[p,:].dot(TopSimilarRecommender.S).toarray().ravel())/(norm_factor)
+                avg_sims = np.array((URM[p,:].dot(TopSimilarRecommender.S).toarray().ravel())/(norm_factor)).ravel()
                 top = rs.top5_outside_playlist(avg_sims, p, train_playlists_tracks_pairs, TopSimilarRecommender.IX_tgt_playlists, TopSimilarRecommender.IX_tgt_items, sim_check, secondary_sorting)
                 recommendetions = np.append(recommendetions, rs.sub_format(top))
             recs = pd.DataFrame({'playlist_id' : TopSimilarRecommender.IX_tgt_playlists.index.values, 'track_ids' : recommendetions})
@@ -91,5 +91,5 @@ class TopSimilarRecommender:
                 chunk_flag += chunk_len
             with Pool() as pool:
                 results = pool.map(step_env.step, sim_chunks)
-            recs = pd.DataFrame({'playlist_id' : IX_tgt_playlists.index.values, 'track_ids' : np.concatenate(results)})
+            recs = pd.DataFrame({'playlist_id' : TopSimilarRecommender.IX_tgt_playlists.index.values, 'track_ids' : np.concatenate(results)})
         return recs

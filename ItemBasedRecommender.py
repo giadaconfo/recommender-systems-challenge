@@ -66,7 +66,7 @@ class ItemBasedRecommender:
         if not multiprocessing:
             recommendetions = np.array([])
             for p in tqdm(IX_tgt_playlists.values):
-                avg_sims = (URM[p,:].dot(ItemBasedRecommender.S).toarray().ravel())/(norm_factor)
+                avg_sims = np.array((URM[p,:].dot(ItemBasedRecommender.S).toarray().ravel())/(norm_factor)).ravel()
                 top = rs.top5_outside_playlist(avg_sims, p, train_data, IX_tgt_playlists, ItemBasedRecommender.IX_tgt_items, sim_check, secondary_sorting)
                 recommendetions = np.append(recommendetions, rs.sub_format(top))
             recs = pd.DataFrame({'playlist_id' : IX_tgt_playlists.index.values, 'track_ids' : recommendetions})

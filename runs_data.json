@@ -287,3 +287,147 @@
   },
   "evaluation": 0.03879870011319247
 }
+{
+  "recommender": "ItemBasedRecommender",
+  "fit_parameters": {
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 10,
+    "n_el_sim": 65
+  },
+  "evaluation": 0.03883046700989529
+}
+{
+  "recommender": "ItemBasedRecommender",
+  "fit_parameters": {
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 10,
+    "n_el_sim": 65
+  },
+  "evaluation": 0.03883046700989529
+}
+{
+  "recommender": "ItemBasedRecommender",
+  "fit_parameters": {
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 10,
+    "n_el_sim": 65
+  },
+  "evaluation": 0.03879870011319247
+}
+{
+  "recommender": "ItemBasedRecommender",
+  "fit_parameters": {
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 10,
+    "n_el_sim": 65
+  },
+  "evaluation": 0.015689925877241016
+}
+{
+  "recommender": "ItemBasedRecommender",
+  "fit_parameters": {
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 10,
+    "n_el_sim": 65
+  },
+  "evaluation": 0.03883046700989529
+}
+{
+  "recommender": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": true,
+    "measure": "imp_cos",
+    "shrinkage": 20,
+    "n_el_sim": 50
+  },
+  "evaluation": 0.05430423193485981
+}
+{
+  "recommender": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": true,
+    "measure": "imp_cos",
+    "shrinkage": 20,
+    "n_el_sim": 50
+  },
+  "evaluation": 0.019270091649322557
+}
+{
+  "recommender": "UserBasedRecommender",
+  "fit_parameters": {
+    "idf": true,
+    "measure": "imp_cos",
+    "shrinkage": 20,
+    "n_el_sim": 50
+  },
+  "evaluation": 0.05430423193485986
+}
+{
+  "recommender": "TopSimilarRecommender",
+  "fit_parameters": {
+    "attributes": [
+      "artist_id",
+      "album",
+      "playcount"
+    ],
+    "n_min_attr": 90,
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 0,
+    "n_el_sim": 65
+  },
+  "evaluation": 0.07642640668930567
+}
+{
+  "recommender": "TopSimilarRecommender",
+  "fit_parameters": {
+    "attributes": [
+      "artist_id",
+      "album",
+      "playcount"
+    ],
+    "n_min_attr": 90,
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 0,
+    "n_el_sim": 65
+  },
+  "evaluation": 0.07642640668930567
+}
+{
+  "recommender": "TopSimilarRecommender",
+  "fit_parameters": {
+    "attributes": [
+      "artist_id",
+      "album",
+      "playcount"
+    ],
+    "n_min_attr": 90,
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 0,
+    "n_el_sim": 65
+  },
+  "evaluation": 0.04872822872165664
+}
+{
+  "recommender": "TopSimilarRecommender",
+  "fit_parameters": {
+    "attributes": [
+      "artist_id",
+      "album",
+      "playcount"
+    ],
+    "n_min_attr": 90,
+    "idf": true,
+    "measure": "dot",
+    "shrinkage": 0,
+    "n_el_sim": 65
+  },
+  "evaluation": 0.07672472340891744
+}
