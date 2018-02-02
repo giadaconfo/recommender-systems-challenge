@@ -1,0 +1,12 @@
+Parameters of the Best Submission:
+
+Content Based : attributes=['artist_id', 'album'],idf=True, n_min_attr=90, n_el_sim=120
+
+Item Based : idf=True, shrinkage=10,n_el_sim=140)
+
+User Based : measure='imp_cos', shrinkage=10,n_el_sim =10
+
+Ensemble Values
+CBF 0.4
+IBR 0.5
+UBR 0.1

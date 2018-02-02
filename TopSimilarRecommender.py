@@ -32,7 +32,7 @@ class TopSimilarRecommender:
     @saved_similarity: matrix to import
     @save_sim: set true to save the matrix that will be created
     '''
-    def fit(self, tracks_info, tgt_tracks=None, saved_similarity=None, save_sim=False, multiprocessing=False):
+    def fit(self, tracks_info, tgt_tracks=None, multiprocessing=False):
         tr_info_fixed = rs.fix_tracks_format(tracks_info)
         print('Fixed dataset')
         TopSimilarRecommender.IX_items, TopSimilarRecommender.IX_tgt_items, _, TopSimilarRecommender.IX_attr = rs.create_sparse_indexes(tracks_info=tr_info_fixed, tracks_reduced=tgt_tracks, attr_list=self.attributes)
@@ -45,19 +45,11 @@ class TopSimilarRecommender:
         if self.idf:
             TopSimilarRecommender.ICM = rs.ICM_idf_regularization(TopSimilarRecommender.ICM)
             print('ICM regularized with IDF!')
-        if saved_similarity is None:
-            if TopSimilarRecommender.IX_tgt_items is not None:
-                TopSimilarRecommender.S = rs.create_Smatrix(TopSimilarRecommender.ICM, self.n_el_sim, self.measure, self.shrinkage, TopSimilarRecommender.IX_tgt_items, TopSimilarRecommender.IX_items, multiprocessing)
-            else:
-                TopSimilarRecommender.S = rs.create_Smatrix(TopSimilarRecommender.ICM, self.n_el_sim, self.measure, self.shrinkage, multiprocessing)
-            print('Similarity built')
-            if save_sim:
-                sps.save_npz('BuiltStructures/tsr_sim_65el_idfTrue_artist_album_playcount.npz', TopSimilarRecommender.S)
+        if TopSimilarRecommender.IX_tgt_items is not None:
+            TopSimilarRecommender.S = rs.create_Smatrix(TopSimilarRecommender.ICM, self.n_el_sim, self.measure, self.shrinkage, TopSimilarRecommender.IX_tgt_items, TopSimilarRecommender.IX_items, multiprocessing)
         else:
-            TopSimilarRecommender.S = sps.load_npz(saved_similarity).tocsr()
-
-
-
+            TopSimilarRecommender.S = rs.create_Smatrix(TopSimilarRecommender.ICM, self.n_el_sim, self.measure, self.shrinkage, multiprocessing)
+        print('Similarity built')
 
     def recommend(self, tgt_playlists, train_playlists_tracks_pairs, normalize=False, H=30, sim_check=True, secondary_sorting=True, multiprocessing=False):
         _, _, TopSimilarRecommender.IX_tgt_playlists, _ = rs.create_sparse_indexes(playlists=tgt_playlists)

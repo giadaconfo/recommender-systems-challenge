@@ -28,8 +28,8 @@ class UserBasedRecommender:
     @saed_similarity: matrix to import
     @save_sim: set true to save the matrix that will be created
     '''
-    def fit(self, track_ids, train_data, tgt_playlists, saved_similarity=None, save_sim=False, multiprocessing=False):
-        UserBasedRecommender.IX_items, _, UserBasedRecommender.IX_playlists, _ = rs.create_sparse_indexes(tracks_info=track_ids, playlists=train_data)
+    def fit(self, track_ids, train_data, tgt_playlists, multiprocessing=False):
+        UserBasedRecommender.IX_items, UserBasedRecommender.IX_tgt_items, UserBasedRecommender.IX_playlists, _ = rs.create_sparse_indexes(tracks_info=track_ids, playlists=train_data)
         _, _, UserBasedRecommender.IX_tgt_playlists, _ = rs.create_sparse_indexes(playlists=tgt_playlists)
         print('Calculated Indices')
 
@@ -42,13 +42,9 @@ class UserBasedRecommender:
             model_URM = rs.ICM_idf_regularization(model_URM)
             print('Model URM regularized with IDF!')
 
-        if saved_similarity is None:
-            UserBasedRecommender.S = rs.create_Smatrix(model_URM.T, self.n_el_sim, self.measure, self.shrinkage, UserBasedRecommender.IX_tgt_playlists, UserBasedRecommender.IX_playlists, multiprocessing)
-            print('Similarity built')
-            if save_sim:
-                sps.save_npz('BuiltStructures/ubr_sim_65el_impcos.npz', UserBasedRecommender.S)
-        else:
-            UserBasedRecommender.S = sps.load_npz(saved_similarity).tocsr()
+        UserBasedRecommender.S = rs.create_Smatrix(model_URM.T, self.n_el_sim, self.measure, self.shrinkage, UserBasedRecommender.IX_tgt_playlists, UserBasedRecommender.IX_playlists, multiprocessing)
+        print('Similarity built')
+
     def recommend(self, tgt_items, train_data, normalize=False, H=20, sim_check=True, secondary_sorting=True, multiprocessing=False):
         _, UserBasedRecommender.IX_tgt_items, _, _ = rs.create_sparse_indexes(tracks_reduced=tgt_items)
         URM = rs.create_UBR_URM(UserBasedRecommender.IX_playlists, UserBasedRecommender.IX_tgt_items, train_data)
