@@ -1,14 +1,11 @@
 import numpy as np
 import pandas as pd
 import os.path
-import time
 from scipy import sparse as sps
 from scipy.sparse import linalg as la
 import math
 import collections
 import sys
-import ctypes
-import random
 from tqdm import tqdm
 from sklearn import preprocessing as prp
 from multiprocessing import Pool, cpu_count
@@ -33,28 +30,6 @@ def fix_playcounts(val):
 
 def fix_durations(val):
     return 1 if val >= 340000 else float('NaN')
-
-#Richiede fixed_tracks_final, target_playlists e target_tracks
-#Restituisce 3 pandas.Series per indicizzare item, target items e target playlists, e una namedtuple con gli attributi
-'''def create_sparse_indexes(tracks, playlists, tracks_torec):
-    items = np.unique(tracks['track_id'].values)
-    artists = np.unique(tracks['artist_id'].values)
-    albums = np.unique(tracks['album'].values)
-    tags = np.unique(tracks[['tag' + str(i) for i in range(1,6)]].values)
-    rec_pl = np.unique(playlists['playlist_id'].values)
-    rec_tr = np.unique(tracks_torec['track_id'].values)
-
-    IX_tgt_playlists = pd.Series(range(rec_pl.size), index=rec_pl)
-    IX_items = pd.Series(range(items.size), index=items)
-    IX_tgt_items = pd.Series(range(rec_tr.size), index=rec_tr)
-    IX_artists = pd.Series(range(artists.size), index=artists)
-    IX_albums = pd.Series(range(artists.size, artists.size + albums.size), index=albums)
-    IX_tags = pd.Series(range(artists.size + albums.size, artists.size + albums.size + tags.size), index=tags)
-
-    SparseIndexes = collections.namedtuple('SparseIndexes', ['artists','albums','tags'])
-    Indexes = SparseIndexes([IX_artists,IX_albums,IX_tags])
-
-    return IX_items, IX_tgt_items, IX_tgt_playlists, Indexes'''
 
 def create_sparse_indexes(tracks_info=None, playlists=None, tracks_reduced=None, attr_list=None):
     if tracks_info is not None:
@@ -118,41 +93,6 @@ def get_sparse_index_val(couples, prim_index, sec_index):
     aux = couples.dropna(axis=0, how='any')
     return prim_index.loc[aux.iloc[:,0].values].values, sec_index.loc[aux.iloc[:,1].values].values
 
-'''
-#deprecated
-def prune_useless(mat, n_min_attr):
-    mat = mat.tocsr()
-    to_del = []
-
-    print('Pruning attributes.')
-    print('Number of attributes before pruning is: ' + str(mat.shape[0]))
-
-    for i in range(mat.shape[0]):
-        if mat[i,:].nnz < n_min_attr:
-            to_del += [i - len(to_del)]
-    for i in to_del:
-        delete_row_csr(mat, i)
-
-    print('Number of attributes after pruning is: ' + str(mat.shape[0]))
-    return
-
-#deprecated
-def delete_row_csr(mat, i):
-    if not isinstance(mat, sps.csr_matrix):
-        raise ValueError("works only for CSR format -- use .tocsr() first")
-    n = mat.indptr[i+1] - mat.indptr[i]
-    if n > 0:
-        mat.data[mat.indptr[i]:-n] = mat.data[mat.indptr[i+1]:]
-        mat.data = mat.data[:-n]
-        mat.indices[mat.indptr[i]:-n] = mat.indices[mat.indptr[i+1]:]
-        mat.indices = mat.indices[:-n]
-    mat.indptr[i:-1] = mat.indptr[i+1:]
-    mat.indptr[i:] -= n
-    mat.indptr = mat.indptr[:-1]
-    mat._shape = (mat._shape[0]-1, mat._shape[1])
-    return
-'''
-
 def delete_low_frequency_attributes(dataset, attributes, n_min):
     for a in attributes:
         if a == 'tags':
@@ -166,18 +106,7 @@ def delete_low_frequency_attributes(dataset, attributes, n_min):
         else:
             dataset[a] = dataset[a].apply(lambda x: float('NaN') if x in to_del else x)
     return dataset
-def create_tgt_URM_old(IX_tgt_playlists, IX_items, playlist_to_track):
-    rows = np.array([], dtype='int32')
-    columns = np.array([], dtype='int32')
-    for p in tqdm(IX_tgt_playlists.index.values):
-        tracks = playlist_to_track[playlist_to_track['playlist_id'] == p]['track_id'].values.astype('int32')
-        rows = np.append(rows, np.array([IX_tgt_playlists.loc[p]]*tracks.size,dtype='int32'))
-        columns = np.append(columns, IX_items.loc[tracks])
-    data = np.array([1]*len(rows), dtype='int32')
-    URM = sps.coo_matrix((data,(rows,columns)), shape=(IX_tgt_playlists.index.shape[0], IX_items.shape[0]))
-    return URM
 
-#Requires the sparse index for target playlists, for items and the dataset with playlists/tracks couples
 def create_tgt_URM(IX_tgt_playlists, IX_items, train):
     train = train.drop_duplicates()
     train = train[train['playlist_id'].isin(IX_tgt_playlists.index)]
@@ -187,19 +116,6 @@ def create_tgt_URM(IX_tgt_playlists, IX_items, train):
     data = np.ones(train.shape[0])
 
     URM = sps.coo_matrix((data,(rows,columns)), dtype=np.int32, shape=(IX_tgt_playlists.index.shape[0], IX_items.shape[0]))
-    return URM
-
-def create_UBR_URM_old(IX_playlists, IX_tgt_items, train):
-    rows = np.array([], dtype='int32')
-    columns = np.array([], dtype='int32')
-    for p in tqdm(IX_playlists.index.values):
-        tracks = train[train['playlist_id'] == p]['track_id'].values.astype('int32')
-        tracks = tracks[np.in1d(tracks, IX_tgt_items.index)]
-        rows = np.append(rows, np.array([IX_playlists.loc[p]]*tracks.size,dtype='int32'))
-        columns = np.append(columns, IX_tgt_items.loc[tracks])
-    data = np.array([1]*len(rows), dtype='int32')
-
-    URM = sps.coo_matrix((data,(rows,columns)), shape=(IX_playlists.index.shape[0], IX_tgt_items.shape[0]))
     return URM
 
 def create_UBR_URM(IX_playlists, IX_tgt_items, train):
@@ -267,31 +183,6 @@ class SimProcessEnvironment:
         S = sps.coo_matrix((data,(rows,columns)), dtype=np.float32, shape=(chunk.shape[1], self.h))
         return S
 
-class RecProcessEnvironment:
-    def __init__(self, data, IX_tgt_playlists, IX_tgt_items, M, norm_factor=1, sim_check=True, secondary_sorting=True, userbased=False):
-        self.data = data
-        self.IX_tgt_playlists = IX_tgt_playlists
-        self.IX_tgt_items = IX_tgt_items
-        self.M = M
-        self.norm_factor = norm_factor
-        self.sim_check = sim_check
-        self.secondary_sorting = secondary_sorting
-        self.userbased = userbased
-
-    def step(self, chunk):
-        recommendetions = np.array([])
-        for p in range(chunk.shape[0]):
-            if not self.userbased:
-                avg_sims = np.array((chunk[p,:].dot(self.M).toarray().ravel())/(self.norm_factor)).ravel()
-            else:
-                avg_sims = (chunk[p,:].multiply(1/(self.norm_factor)).dot(self.M).toarray().ravel())
-            top = top5_outside_playlist(avg_sims, p, self.data, self.IX_tgt_playlists, self.IX_tgt_items, self.sim_check, self.secondary_sorting)
-            recommendetions = np.append(recommendetions, sub_format(top))
-
-            if not p%1000: print('Computed '+str(p)+' recommendetions over chunk of '+str(chunk.shape[0])+' elements.')
-
-        return recommendetions
-
 def create_Smatrix(ICM, n_el=20, measure='dot',shrinkage=0, IX_tgt_items=None, IX_items=None, multiprocessing=False):
     if ((IX_tgt_items is not None and IX_items is None) or (IX_tgt_items is None and IX_items is not None)):
         sys.exit('Error: IX_items and IX_tgt_items must be both None or both defined')
@@ -345,36 +236,6 @@ def create_Smatrix(ICM, n_el=20, measure='dot',shrinkage=0, IX_tgt_items=None, I
         S = sps.vstack(results)
 
     return S
-'''TO BE FIXED
-def top5_outside_playlist(ratings, p_id, train_playlists_tracks_pairs, IX_tgt_playlists, IX_tgt_items, sim_check, secondary_sorting):
-    tgt_in_playlist = np.intersect1d(train_playlists_tracks_pairs[train_playlists_tracks_pairs['playlist_id'] == IX_tgt_playlists.index.values[p_id]]['track_id'].values, IX_tgt_items.index.values, assume_unique=True)
-    ratings[IX_tgt_items.loc[tgt_in_playlist].values] = 0 #line to change
-
-    if((np.count_nonzero(ratings) < 5) and sim_check):
-        sys.exit('Not enough similarity')
-
-    if(secondary_sorting):
-        treshold = np.argsort(ratings)[-5:-4]
-        top5_id = sort_equal_by_popularity(ratings, treshold, train_playlists_tracks_pairs, IX_tgt_items)
-    else:
-        top5_ind = np.flip(np.argsort(ratings)[-5:], axis=0)
-        top5_id = IX_tgt_items.index.values[top5_ind]
-
-    return top5_id
-
-def sort_equal_by_popularity(ratings, treshold, train, IX_tgt_items):
-    competitors = IX_tgt_items[ratings >= treshold].index.values
-    most_popular = train['track_id'][train['track_id'].isin(competitors)].value_counts()
-    most_rated = np.flip(np.argsort(ratings), axis=0)
-    most_rated = most_rated[ratings[most_rated] >= treshold]
-    combined_type = np.dtype([('item', 'i4'), ('rate', 'f4'), ('pop', 'i4')])
-    combined = np.empty(competitors.shape[0], combined_type)
-    combined['item'] = competitors
-    combined['rate'] = ratings[IX_tgt_items.loc[competitors]]
-    combined['pop'] = most_popular.loc[competitors]
-    ordered_ix = np.flip(np.argsort(combined, order=['rate', 'pop'])[-5:], axis=0)
-    return combined['item'][ordered_ix]
-'''
 
 def top5_outside_playlist(ratings, p_id, train_playlists_tracks_pairs, IX_tgt_playlists, IX_tgt_items, sim_check, secondary_sorting):
     tgt_in_playlist = np.intersect1d(train_playlists_tracks_pairs[train_playlists_tracks_pairs['playlist_id'] == IX_tgt_playlists.index.values[p_id]]['track_id'].values, IX_tgt_items.index.values, assume_unique=True)
@@ -403,10 +264,6 @@ def sub_format(l):
     res = " ".join(np.array_str(l).split())[1:-1]
     return res
 
-'''Requires:
-    The dataset generated from the recommender system
-    The test set
-    A string indicating the metric for evaluation'''
 def evaluate(results, test, eval_metric='MAP'):
     if eval_metric == 'MAP':
         APs = results.apply(calculate_AP, axis=1, args=(test,))
@@ -496,7 +353,6 @@ def train_test_split_interface(data, min_interactions=10, test_percentage=20, in
     test = pd.DataFrame({'playlist_id' : IX_playlists.index[test_M.nonzero()[0]], 'track_id' : IX_items.index[test_M.nonzero()[1]]})
     tgt_tracks = pd.DataFrame({'track_id' : IX_items.index[np.unique(test_M.nonzero()[1])]})
 
-
     return train, test, tgt_tracks, tgt_playlists
 
 def compute_idf(ICM):
@@ -578,3 +434,28 @@ def generic_similarity_based_recommend(S, tracks, tgt_tracks, tgt_playlists, tra
         recommendetions = np.append(recommendetions, sub_format(top))
 
     return pd.DataFrame({'playlist_id' : IX_tgt_playlists.index.values, 'track_ids' : recommendetions})
+
+class RecProcessEnvironment:
+    def __init__(self, data, IX_tgt_playlists, IX_tgt_items, M, norm_factor=1, sim_check=True, secondary_sorting=True, userbased=False):
+        self.data = data
+        self.IX_tgt_playlists = IX_tgt_playlists
+        self.IX_tgt_items = IX_tgt_items
+        self.M = M
+        self.norm_factor = norm_factor
+        self.sim_check = sim_check
+        self.secondary_sorting = secondary_sorting
+        self.userbased = userbased
+
+    def step(self, chunk):
+        recommendetions = np.array([])
+        for p in range(chunk.shape[0]):
+            if not self.userbased:
+                avg_sims = np.array((chunk[p,:].dot(self.M).toarray().ravel())/(self.norm_factor)).ravel()
+            else:
+                avg_sims = (chunk[p,:].multiply(1/(self.norm_factor)).dot(self.M).toarray().ravel())
+            top = top5_outside_playlist(avg_sims, p, self.data, self.IX_tgt_playlists, self.IX_tgt_items, self.sim_check, self.secondary_sorting)
+            recommendetions = np.append(recommendetions, sub_format(top))
+
+            if not p%1000: print('Computed '+str(p)+' recommendetions over chunk of '+str(chunk.shape[0])+' elements.')
+
+        return recommendetions

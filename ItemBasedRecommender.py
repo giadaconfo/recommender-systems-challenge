@@ -22,10 +22,6 @@ class ItemBasedRecommender:
         self.n_el_sim = n_el_sim
         return
 
-    '''
-    @saved_similarity: matrix to import
-    @save_sim: set true to save the matrix that will be created
-    '''
     def fit(self, track_ids, train_data, tgt_tracks=None, URM=None, multiprocessing=False):
         ItemBasedRecommender.IX_items, ItemBasedRecommender.IX_tgt_items, playlists_ix, _ = rs.create_sparse_indexes(tracks_info=track_ids, playlists=train_data, tracks_reduced=tgt_tracks)
         print('Calculated Indices')

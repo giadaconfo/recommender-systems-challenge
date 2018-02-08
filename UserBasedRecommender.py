@@ -24,10 +24,6 @@ class UserBasedRecommender:
         self.n_el_sim = n_el_sim
         return
 
-    '''
-    @saed_similarity: matrix to import
-    @save_sim: set true to save the matrix that will be created
-    '''
     def fit(self, track_ids, train_data, tgt_playlists, multiprocessing=False):
         UserBasedRecommender.IX_items, UserBasedRecommender.IX_tgt_items, UserBasedRecommender.IX_playlists, _ = rs.create_sparse_indexes(tracks_info=track_ids, playlists=train_data)
         _, _, UserBasedRecommender.IX_tgt_playlists, _ = rs.create_sparse_indexes(playlists=tgt_playlists)

@@ -27,11 +27,7 @@ class TopSimilarRecommender:
         self.shrinkage = shrinkage
         self.n_el_sim = n_el_sim
         return
-
-    '''
-    @saved_similarity: matrix to import
-    @save_sim: set true to save the matrix that will be created
-    '''
+    
     def fit(self, tracks_info, tgt_tracks=None, multiprocessing=False):
         tr_info_fixed = rs.fix_tracks_format(tracks_info)
         print('Fixed dataset')
