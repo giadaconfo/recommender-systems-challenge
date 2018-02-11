@@ -309,12 +309,6 @@ def split_train_test(track_playlist_couples, min_tracks_in_playlist=10, test_per
     return train, test, tgt_tracks, tgt_playlists
 
 def train_test_split_from_URM(interactions, min_interactions, split_count, fraction=None, random_state=None):
-    """ Split recommendation data into train and test sets
-        Params ------
-        interactions : scipy.sparse matrix Interactions between users and items.
-        split_count : int Number of user-item-interactions per user to move from training to test set.
-        fractions : float Fraction of users to split off some of their interactions into test set. If None, then all users are considered. """
-
     train = interactions.copy().tocoo()
     test = sps.lil_matrix(train.shape)
     if (random_state):
@@ -334,10 +328,8 @@ def train_test_split_from_URM(interactions, min_interactions, split_count, fract
     for user in user_index:
         test_interactions = np.random.choice(interactions.getrow(user).indices, size=split_count, replace=False)
         train[user, test_interactions] = 0.
-        # These are just 1.0 right now
         test[user, test_interactions] = interactions[user, test_interactions]
 
-    # Test and training are truly disjoint
     assert (train.multiply(test).nnz == 0)
     np.random.seed()
 
