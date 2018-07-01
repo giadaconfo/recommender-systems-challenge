@@ -29,4 +29,5 @@ For our final solution we chose an ensemble combining three models, in order to 
 - Content Based Recommender (weight 0.4)
 - Item Based Recommender (weight 0.5)
 - User Based Recommender (weight 0.1)
+
 For further information check our final [presentation](https://github.com/giadaconfo/recommender-systems-challenge/blob/master/Presentation.pdf). 
