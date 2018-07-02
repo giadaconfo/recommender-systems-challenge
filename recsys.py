@@ -6,6 +6,7 @@ from scipy.sparse import linalg as la
 import math
 import collections
 import sys
+import random
 from tqdm import tqdm
 from sklearn import preprocessing as prp
 from multiprocessing import Pool, cpu_count
@@ -305,45 +306,6 @@ def split_train_test(track_playlist_couples, min_tracks_in_playlist=10, test_per
 
     train = tracks_in_test_pl.drop(indexes_to_remove)
     tgt_tracks = test.drop_duplicates('track_id')
-
-    return train, test, tgt_tracks, tgt_playlists
-
-def train_test_split_from_URM(interactions, min_interactions, split_count, fraction=None, random_state=None):
-    train = interactions.copy().tocoo()
-    test = sps.lil_matrix(train.shape)
-    if (random_state):
-        np.random.seed(random_state)
-
-    if fraction:
-        try:
-            user_index = np.random.choice(np.where(np.bincount(train.row) >= min_interactions)[0], replace=False, size=np.int64(np.floor(fraction * train.shape[0]))).tolist()
-        except:
-            print(('Not enough users with > ' + str(min_interactions) + ' interactions for fraction of ' + str(fraction)))
-            raise
-    else:
-        user_index = range(train.shape[0])
-
-    train = train.tolil()
-    interactions = interactions.tocsr()
-    for user in user_index:
-        test_interactions = np.random.choice(interactions.getrow(user).indices, size=split_count, replace=False)
-        train[user, test_interactions] = 0.
-        test[user, test_interactions] = interactions[user, test_interactions]
-
-    assert (train.multiply(test).nnz == 0)
-    np.random.seed()
-
-    return train.tocsr(), test.tocsr(), user_index
-
-def train_test_split_interface(data, min_interactions=10, test_percentage=20, interactions_toremove=5, seed=2517):
-    IX_items, _, IX_playlists, _ = create_sparse_indexes(tracks_info=data, playlists=data)
-    interactions = create_tgt_URM(IX_playlists, IX_items, data)
-    train_M, test_M, tgt_playlists_ix = train_test_split_from_URM(interactions, min_interactions, interactions_toremove, test_percentage/100, seed)
-
-    tgt_playlists = pd.DataFrame({'playlist_id' : IX_playlists.index[tgt_playlists_ix]})
-    train = pd.DataFrame({'playlist_id' : IX_playlists.index[train_M.nonzero()[0]], 'track_id' : IX_items.index[train_M.nonzero()[1]]})
-    test = pd.DataFrame({'playlist_id' : IX_playlists.index[test_M.nonzero()[0]], 'track_id' : IX_items.index[test_M.nonzero()[1]]})
-    tgt_tracks = pd.DataFrame({'track_id' : IX_items.index[np.unique(test_M.nonzero()[1])]})
 
     return train, test, tgt_tracks, tgt_playlists
 
